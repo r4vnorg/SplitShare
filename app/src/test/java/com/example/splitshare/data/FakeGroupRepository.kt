@@ -14,18 +14,25 @@ import kotlinx.coroutines.flow.flowOf
 class FakeGroupRepository : GroupRepository {
 
     val createdGroups = mutableListOf<Group>()
+    val addedParticipants = mutableListOf<Pair<String, Person>>()
+    val removedParticipants = mutableListOf<Pair<String, String>>()
 
     private val groupsFlow = MutableStateFlow<List<GroupSummary>>(emptyList())
+    private val participantsFlow = MutableStateFlow<List<Participant>>(emptyList())
 
     fun emitGroups(groups: List<GroupSummary>) {
         groupsFlow.value = groups
+    }
+
+    fun emitParticipants(participants: List<Participant>) {
+        participantsFlow.value = participants
     }
 
     override fun observeGroups(): Flow<List<GroupSummary>> = groupsFlow
 
     override fun observeGroup(groupId: String): Flow<Group?> = flowOf(null)
 
-    override fun observeParticipants(groupId: String): Flow<List<Participant>> = flowOf(emptyList())
+    override fun observeParticipants(groupId: String): Flow<List<Participant>> = participantsFlow
 
     override suspend fun createGroup(name: String, description: String): Group {
         val group = Group(id = "group-${createdGroups.size}", name = name, description = description, createdAt = 0L)
@@ -33,9 +40,13 @@ class FakeGroupRepository : GroupRepository {
         return group
     }
 
-    override suspend fun addParticipant(groupId: String, person: Person) = Unit
+    override suspend fun addParticipant(groupId: String, person: Person) {
+        addedParticipants += groupId to person
+    }
 
-    override suspend fun removeParticipant(groupId: String, personId: String) = Unit
+    override suspend fun removeParticipant(groupId: String, personId: String) {
+        removedParticipants += groupId to personId
+    }
 
     override suspend fun getPendingGroups(): List<Group> = emptyList()
 

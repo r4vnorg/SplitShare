@@ -3,12 +3,16 @@ package com.example.splitshare.ui.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
 import com.example.splitshare.ui.screens.CreateGroupScreen
 import com.example.splitshare.ui.screens.CreateProfileScreen
+import com.example.splitshare.ui.screens.GroupDetailScreen
 import com.example.splitshare.ui.screens.GroupListScreen
 import com.example.splitshare.ui.screens.LoginScreen
+import com.example.splitshare.ui.screens.ManageMembersScreen
 
 @Composable
 fun AppNavigation(navController: NavHostController, modifier: Modifier = Modifier) {
@@ -36,15 +40,33 @@ fun AppNavigation(navController: NavHostController, modifier: Modifier = Modifie
         composable(Routes.GROUP_LIST) {
             GroupListScreen(
                 onCreateGroup = { navController.navigate(Routes.CREATE_GROUP) },
-                // TODO US5: navigate to the group's detail screen once it exists.
-                onGroupClick = {},
+                onGroupClick = { groupId -> navController.navigate(Routes.groupDetail(groupId)) },
                 // TODO US2: navigate to Profile & notification settings once it exists.
                 onProfileClick = {},
             )
         }
         composable(Routes.CREATE_GROUP) {
-            // TODO US5: once Group Detail exists, navigate there with the new group's id instead.
             CreateGroupScreen(onSaved = { navController.popBackStack() })
+        }
+        composable(
+            route = Routes.GROUP_DETAIL,
+            arguments = listOf(navArgument(Routes.GROUP_ID_ARG) { type = NavType.StringType }),
+        ) { backStackEntry ->
+            val groupId = checkNotNull(backStackEntry.arguments?.getString(Routes.GROUP_ID_ARG))
+            GroupDetailScreen(
+                onBack = { navController.popBackStack() },
+                onMembersClick = { navController.navigate(Routes.manageMembers(groupId)) },
+                // TODO US6: navigate to the Add Expense flow once it exists.
+                onAddExpenseClick = {},
+                // TODO US7: navigate to Expense Detail once it exists.
+                onExpenseClick = {},
+            )
+        }
+        composable(
+            route = Routes.MANAGE_MEMBERS,
+            arguments = listOf(navArgument(Routes.GROUP_ID_ARG) { type = NavType.StringType }),
+        ) {
+            ManageMembersScreen(onBack = { navController.popBackStack() })
         }
     }
 }

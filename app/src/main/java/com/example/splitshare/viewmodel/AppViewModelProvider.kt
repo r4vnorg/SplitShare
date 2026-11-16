@@ -1,6 +1,7 @@
 package com.example.splitshare.viewmodel
 
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
+import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -13,6 +14,21 @@ object AppViewModelProvider {
         initializer { CreateProfileViewModel(splitShareApplication().container.profileRepository) }
         initializer { GroupListViewModel(splitShareApplication().container.groupRepository) }
         initializer { CreateGroupViewModel(splitShareApplication().container.groupRepository) }
+        initializer {
+            GroupDetailViewModel(
+                savedStateHandle = createSavedStateHandle(),
+                groupRepository = splitShareApplication().container.groupRepository,
+                expenseRepository = splitShareApplication().container.expenseRepository,
+            )
+        }
+        initializer {
+            ManageMembersViewModel(
+                savedStateHandle = createSavedStateHandle(),
+                groupRepository = splitShareApplication().container.groupRepository,
+                expenseRepository = splitShareApplication().container.expenseRepository,
+                personRepository = splitShareApplication().container.personRepository,
+            )
+        }
     }
 }
 
