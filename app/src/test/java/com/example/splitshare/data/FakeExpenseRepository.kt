@@ -4,12 +4,13 @@ import com.example.splitshare.domain.model.Expense
 import com.example.splitshare.domain.model.SyncStatus
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 
 /** In-memory test double for ViewModel tests; avoids needing a real Room database. */
 class FakeExpenseRepository : ExpenseRepository {
 
     val addedExpenses = mutableListOf<Expense>()
+    val retriedExpenseIds = mutableListOf<String>()
 
     private val expensesFlow = MutableStateFlow<List<Expense>>(emptyList())
 
@@ -19,7 +20,8 @@ class FakeExpenseRepository : ExpenseRepository {
 
     override fun observeExpenses(groupId: String): Flow<List<Expense>> = expensesFlow
 
-    override fun observeExpense(expenseId: String): Flow<Expense?> = flowOf(null)
+    override fun observeExpense(expenseId: String): Flow<Expense?> =
+        expensesFlow.map { expenses -> expenses.find { it.id == expenseId } }
 
     override suspend fun addExpense(
         groupId: String,
@@ -45,7 +47,9 @@ class FakeExpenseRepository : ExpenseRepository {
         return expense
     }
 
-    override suspend fun retrySync(expenseId: String) = Unit
+    override suspend fun retrySync(expenseId: String) {
+        retriedExpenseIds += expenseId
+    }
 
     override suspend fun getPendingExpenses(): List<Expense> = emptyList()
 

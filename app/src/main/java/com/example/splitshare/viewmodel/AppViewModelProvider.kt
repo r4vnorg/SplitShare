@@ -33,6 +33,14 @@ object AppViewModelProvider {
             AddExpenseViewModel(
                 savedStateHandle = createSavedStateHandle(),
                 groupRepository = splitShareApplication().container.groupRepository,
+                expenseRepository = splitShareApplication().container.expenseRepository,
+            )
+        }
+        initializer {
+            ExpenseDetailViewModel(
+                savedStateHandle = createSavedStateHandle(),
+                expenseRepository = splitShareApplication().container.expenseRepository,
+                groupRepository = splitShareApplication().container.groupRepository,
             )
         }
     }

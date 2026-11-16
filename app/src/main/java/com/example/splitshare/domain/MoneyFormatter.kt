@@ -12,4 +12,11 @@ object MoneyFormatter {
         val cents = absMinor % 100
         return "$sign$whole,${cents.toString().padStart(2, '0')} kr"
     }
+
+    /** Non-negative amount as plain "123.45" (dot separator, no "kr") - round-trips through [MoneyParser]. */
+    fun formatPlain(amountMinor: Long): String {
+        val whole = amountMinor / 100
+        val cents = amountMinor % 100
+        return "$whole.${cents.toString().padStart(2, '0')}"
+    }
 }

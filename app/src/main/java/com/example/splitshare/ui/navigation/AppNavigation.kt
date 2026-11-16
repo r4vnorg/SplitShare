@@ -11,8 +11,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.navArgument
 import com.example.splitshare.ui.screens.AddExpensePayerAmountScreen
+import com.example.splitshare.ui.screens.AddExpenseSelectSplitScreen
 import com.example.splitshare.ui.screens.CreateGroupScreen
 import com.example.splitshare.ui.screens.CreateProfileScreen
+import com.example.splitshare.ui.screens.ExpenseDetailScreen
 import com.example.splitshare.ui.screens.GroupDetailScreen
 import com.example.splitshare.ui.screens.GroupListScreen
 import com.example.splitshare.ui.screens.LoginScreen
@@ -62,9 +64,17 @@ fun AppNavigation(navController: NavHostController, modifier: Modifier = Modifie
                 onBack = { navController.popBackStack() },
                 onMembersClick = { navController.navigate(Routes.manageMembers(groupId)) },
                 onAddExpenseClick = { navController.navigate(Routes.addExpenseGraph(groupId)) },
-                // TODO US7: navigate to Expense Detail once it exists.
-                onExpenseClick = {},
+                onExpenseClick = { expenseId -> navController.navigate(Routes.expenseDetail(groupId, expenseId)) },
             )
+        }
+        composable(
+            route = Routes.EXPENSE_DETAIL,
+            arguments = listOf(
+                navArgument(Routes.GROUP_ID_ARG) { type = NavType.StringType },
+                navArgument(Routes.EXPENSE_ID_ARG) { type = NavType.StringType },
+            ),
+        ) {
+            ExpenseDetailScreen(onBack = { navController.popBackStack() })
         }
         composable(
             route = Routes.MANAGE_MEMBERS,
@@ -83,8 +93,18 @@ fun AppNavigation(navController: NavHostController, modifier: Modifier = Modifie
                 }
                 AddExpensePayerAmountScreen(
                     onBack = { navController.popBackStack() },
-                    // TODO US7: navigate to the select-split step once it exists.
-                    onNext = {},
+                    onNext = { navController.navigate(Routes.ADD_EXPENSE_SELECT_SPLIT) },
+                    viewModel = viewModel(factory = AppViewModelProvider.Factory, viewModelStoreOwner = graphEntry),
+                )
+            }
+            composable(Routes.ADD_EXPENSE_SELECT_SPLIT) { backStackEntry ->
+                val graphEntry = remember(backStackEntry) {
+                    navController.getBackStackEntry(Routes.ADD_EXPENSE_GRAPH)
+                }
+                AddExpenseSelectSplitScreen(
+                    onBack = { navController.popBackStack() },
+                    // Per the design doc: Save returns straight to Group Detail, popping the whole flow.
+                    onSaved = { navController.popBackStack(route = Routes.GROUP_DETAIL, inclusive = false) },
                     viewModel = viewModel(factory = AppViewModelProvider.Factory, viewModelStoreOwner = graphEntry),
                 )
             }
