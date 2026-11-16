@@ -29,6 +29,12 @@ object AppViewModelProvider {
                 personRepository = splitShareApplication().container.personRepository,
             )
         }
+        initializer {
+            AddExpenseViewModel(
+                savedStateHandle = createSavedStateHandle(),
+                groupRepository = splitShareApplication().container.groupRepository,
+            )
+        }
     }
 }
 

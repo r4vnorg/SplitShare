@@ -1,18 +1,23 @@
 package com.example.splitshare.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.navigation
 import androidx.navigation.navArgument
+import com.example.splitshare.ui.screens.AddExpensePayerAmountScreen
 import com.example.splitshare.ui.screens.CreateGroupScreen
 import com.example.splitshare.ui.screens.CreateProfileScreen
 import com.example.splitshare.ui.screens.GroupDetailScreen
 import com.example.splitshare.ui.screens.GroupListScreen
 import com.example.splitshare.ui.screens.LoginScreen
 import com.example.splitshare.ui.screens.ManageMembersScreen
+import com.example.splitshare.viewmodel.AppViewModelProvider
 
 @Composable
 fun AppNavigation(navController: NavHostController, modifier: Modifier = Modifier) {
@@ -56,8 +61,7 @@ fun AppNavigation(navController: NavHostController, modifier: Modifier = Modifie
             GroupDetailScreen(
                 onBack = { navController.popBackStack() },
                 onMembersClick = { navController.navigate(Routes.manageMembers(groupId)) },
-                // TODO US6: navigate to the Add Expense flow once it exists.
-                onAddExpenseClick = {},
+                onAddExpenseClick = { navController.navigate(Routes.addExpenseGraph(groupId)) },
                 // TODO US7: navigate to Expense Detail once it exists.
                 onExpenseClick = {},
             )
@@ -67,6 +71,23 @@ fun AppNavigation(navController: NavHostController, modifier: Modifier = Modifie
             arguments = listOf(navArgument(Routes.GROUP_ID_ARG) { type = NavType.StringType }),
         ) {
             ManageMembersScreen(onBack = { navController.popBackStack() })
+        }
+        navigation(
+            route = Routes.ADD_EXPENSE_GRAPH,
+            startDestination = Routes.ADD_EXPENSE_PAYER_AMOUNT,
+            arguments = listOf(navArgument(Routes.GROUP_ID_ARG) { type = NavType.StringType }),
+        ) {
+            composable(Routes.ADD_EXPENSE_PAYER_AMOUNT) { backStackEntry ->
+                val graphEntry = remember(backStackEntry) {
+                    navController.getBackStackEntry(Routes.ADD_EXPENSE_GRAPH)
+                }
+                AddExpensePayerAmountScreen(
+                    onBack = { navController.popBackStack() },
+                    // TODO US7: navigate to the select-split step once it exists.
+                    onNext = {},
+                    viewModel = viewModel(factory = AppViewModelProvider.Factory, viewModelStoreOwner = graphEntry),
+                )
+            }
         }
     }
 }
