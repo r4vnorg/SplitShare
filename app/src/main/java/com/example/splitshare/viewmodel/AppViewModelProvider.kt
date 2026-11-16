@@ -11,6 +11,8 @@ object AppViewModelProvider {
     val Factory = viewModelFactory {
         initializer { LoginViewModel(splitShareApplication().container.profileRepository) }
         initializer { CreateProfileViewModel(splitShareApplication().container.profileRepository) }
+        initializer { GroupListViewModel(splitShareApplication().container.groupRepository) }
+        initializer { CreateGroupViewModel(splitShareApplication().container.groupRepository) }
     }
 }
 

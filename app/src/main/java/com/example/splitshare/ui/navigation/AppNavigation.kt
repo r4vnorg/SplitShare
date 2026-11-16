@@ -5,6 +5,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.example.splitshare.ui.screens.CreateGroupScreen
 import com.example.splitshare.ui.screens.CreateProfileScreen
 import com.example.splitshare.ui.screens.GroupListScreen
 import com.example.splitshare.ui.screens.LoginScreen
@@ -33,7 +34,17 @@ fun AppNavigation(navController: NavHostController, modifier: Modifier = Modifie
             CreateProfileScreen(onSaved = goToGroupList)
         }
         composable(Routes.GROUP_LIST) {
-            GroupListScreen()
+            GroupListScreen(
+                onCreateGroup = { navController.navigate(Routes.CREATE_GROUP) },
+                // TODO US5: navigate to the group's detail screen once it exists.
+                onGroupClick = {},
+                // TODO US2: navigate to Profile & notification settings once it exists.
+                onProfileClick = {},
+            )
+        }
+        composable(Routes.CREATE_GROUP) {
+            // TODO US5: once Group Detail exists, navigate there with the new group's id instead.
+            CreateGroupScreen(onSaved = { navController.popBackStack() })
         }
     }
 }
