@@ -6,6 +6,8 @@ import com.example.splitshare.data.ExpenseRepository
 import com.example.splitshare.data.GroupRepository
 import com.example.splitshare.data.PersonRepository
 import com.example.splitshare.data.ProfileRepository
+import com.example.splitshare.data.ReminderRepository
+import com.example.splitshare.data.SchedulingReminderRepository
 import com.example.splitshare.data.RoomExpenseRepository
 import com.example.splitshare.data.RoomGroupRepository
 import com.example.splitshare.data.RoomPersonRepository
@@ -25,6 +27,8 @@ class AppContainer(context: Context) {
     val syncScheduler = SyncScheduler(context)
     val syncService: SyncService = StubSyncService()
     val syncNotifier = SyncNotifier(context)
+
+    val reminderRepository: ReminderRepository = SchedulingReminderRepository(syncScheduler)
 
     val groupRepository: GroupRepository = RoomGroupRepository(
         groupDao = database.groupDao(),

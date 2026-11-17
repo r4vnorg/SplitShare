@@ -16,13 +16,17 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -45,8 +49,17 @@ fun GroupDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+    val snackbarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(uiState.message) {
+        uiState.message?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.messageShown()
+        }
+    }
+
     Scaffold(
         modifier = modifier,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text(uiState.groupName) },
@@ -110,13 +123,29 @@ fun GroupDetailScreen(
                     }
                 }
                 GroupDetailTab.BALANCES -> {
-                    Text(
-                        text = "Balances coming soon.",
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(24.dp),
-                    )
+                    // Minimal balances list; the full Balances view/settlement is US9.
+                    LazyColumn(modifier = Modifier.fillMaxSize()) {
+                        items(uiState.balances, key = { it.personId }) { balance ->
+                            ListItem(
+                                headlineContent = { Text(balance.name) },
+                                supportingContent = {
+                                    Text(
+                                        when {
+                                            balance.netMinor > 0 -> "is owed ${MoneyFormatter.format(balance.netMinor)}"
+                                            balance.netMinor < 0 -> "owes ${MoneyFormatter.format(-balance.netMinor)}"
+                                            else -> "settled up"
+                                        }
+                                    )
+                                },
+                                trailingContent = {
+                                    // US12: Remind only for members who owe the current user (conditional connector S6 -> S10).
+                                    if (balance.owedToMeMinor > 0) {
+                                        TextButton(onClick = { viewModel.sendReminder(balance.personId) }) { Text("Remind") }
+                                    }
+                                },
+                            )
+                        }
+                    }
                 }
             }
         }

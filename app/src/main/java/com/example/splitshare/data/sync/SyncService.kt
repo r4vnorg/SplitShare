@@ -12,4 +12,7 @@ interface SyncService {
     suspend fun syncGroup(group: Group): Boolean
     suspend fun syncParticipant(groupId: String, personId: String, removed: Boolean): Boolean
     suspend fun syncExpense(expense: Expense): Boolean
+
+    /** US12: delivers a payment reminder to [toPersonId]. */
+    suspend fun sendReminder(groupId: String, toPersonId: String, amountMinor: Long): Boolean
 }

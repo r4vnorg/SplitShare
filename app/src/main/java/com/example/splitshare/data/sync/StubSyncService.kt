@@ -22,6 +22,11 @@ class StubSyncService : SyncService {
         return true
     }
 
+    override suspend fun sendReminder(groupId: String, toPersonId: String, amountMinor: Long): Boolean {
+        delay(SIMULATED_LATENCY_MS)
+        return true
+    }
+
     private companion object {
         const val SIMULATED_LATENCY_MS = 800L
     }
