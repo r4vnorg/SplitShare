@@ -25,6 +25,20 @@ class SyncScheduler(private val context: Context) {
             .enqueueUniqueWork(UNIQUE_WORK_NAME, ExistingWorkPolicy.REPLACE, buildRequest())
     }
 
+    /**
+     * US12: queues one reminder. WorkManager persists it (offline-safe) and retries with backoff.
+     * KEEP makes a repeated tap on the same debtor a no-op while the first reminder is still queued.
+     */
+    fun scheduleReminder(groupId: String, personId: String, personName: String, amountMinor: Long) {
+        val request = OneTimeWorkRequestBuilder<ReminderWorker>()
+            .setInputData(ReminderWorker.inputData(groupId, personId, personName, amountMinor))
+            .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
+            .build()
+        WorkManager.getInstance(context)
+            .enqueueUniqueWork("reminder_${groupId}_$personId", ExistingWorkPolicy.KEEP, request)
+    }
+
     private fun buildRequest(): OneTimeWorkRequest =
         OneTimeWorkRequestBuilder<SyncWorker>()
             .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())

@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
+import com.example.splitshare.data.sync.ReminderWorker
 import com.example.splitshare.data.sync.SyncWorker
 
 /** No Hilt in this repo (manual DI, see AppContainer) - hands workers their dependencies by hand. */
@@ -19,6 +20,12 @@ class SplitShareWorkerFactory(private val container: AppContainer) : WorkerFacto
             workerParameters,
             container.groupRepository,
             container.expenseRepository,
+            container.syncService,
+            container.syncNotifier,
+        )
+        ReminderWorker::class.java.name -> ReminderWorker(
+            appContext,
+            workerParameters,
             container.syncService,
             container.syncNotifier,
         )

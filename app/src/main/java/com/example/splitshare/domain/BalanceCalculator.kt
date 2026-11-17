@@ -20,4 +20,18 @@ object BalanceCalculator {
         }
         return balance
     }
+
+    /**
+     * US12: who owes [currentPersonId] money. Empty unless the current user is a net creditor;
+     * otherwise every other member with a negative net balance, mapped to the amount they owe.
+     * Group-level, not pairwise (pairwise "who owes whom" is US9's settlement view).
+     */
+    fun debtorsOf(currentPersonId: String, memberIds: List<String>, expenses: List<Expense>): Map<String, Long> {
+        if (netBalance(currentPersonId, expenses) <= 0L) return emptyMap()
+        return memberIds
+            .filter { it != currentPersonId }
+            .associateWith { netBalance(it, expenses) }
+            .filterValues { it < 0L }
+            .mapValues { -it.value }
+    }
 }

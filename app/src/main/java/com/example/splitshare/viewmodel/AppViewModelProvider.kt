@@ -6,6 +6,7 @@ import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.splitshare.SplitShareApplication
+import kotlinx.coroutines.flow.map
 
 /** Creates ViewModels with their dependencies from [com.example.splitshare.AppContainer]. */
 object AppViewModelProvider {
@@ -19,6 +20,8 @@ object AppViewModelProvider {
                 savedStateHandle = createSavedStateHandle(),
                 groupRepository = splitShareApplication().container.groupRepository,
                 expenseRepository = splitShareApplication().container.expenseRepository,
+                reminderRepository = splitShareApplication().container.reminderRepository,
+                currentUserEmail = splitShareApplication().container.profileRepository.profile.map { it?.email },
             )
         }
         initializer {

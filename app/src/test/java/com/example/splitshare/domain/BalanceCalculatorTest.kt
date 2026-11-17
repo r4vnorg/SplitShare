@@ -54,4 +54,18 @@ class BalanceCalculatorTest {
         val expenses = listOf(expense(payerId = "alice", amountMinor = 300L, shares = mapOf("bob" to 300L)))
         assertEquals(0L, BalanceCalculator.netBalance("carol", expenses))
     }
+
+    @Test
+    fun debtorsOfListsOnlyMembersWhoOweTheCreditor() {
+        val expenses = listOf(
+            expense(payerId = "alice", amountMinor = 300L, shares = mapOf("alice" to 100L, "bob" to 200L))
+        )
+        assertEquals(mapOf("bob" to 200L), BalanceCalculator.debtorsOf("alice", listOf("alice", "bob", "carol"), expenses))
+    }
+
+    @Test
+    fun debtorsOfIsEmptyWhenCurrentUserIsNotACreditor() {
+        val expenses = listOf(expense(payerId = "alice", amountMinor = 300L, shares = mapOf("bob" to 300L)))
+        assertEquals(emptyMap<String, Long>(), BalanceCalculator.debtorsOf("bob", listOf("alice", "bob"), expenses))
+    }
 }
