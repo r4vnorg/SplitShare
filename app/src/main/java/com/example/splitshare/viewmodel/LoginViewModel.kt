@@ -13,20 +13,23 @@ import kotlinx.coroutines.launch
 data class LoginUiState(
     val email: String = "",
     val error: String? = null,
-    val noProfileFound: Boolean = false,
 )
 
-/** S1 Login (US3): mocked login that matches the email of the profile stored on the device. */
+/**
+ * S1 Login (US3): mocked login that matches the email of the profile stored on the device.
+ * Per the navigation model, logging in is the single decision point: a match goes to Group
+ * List, no match goes straight to Create Profile (no separate "Create profile" action).
+ */
 class LoginViewModel(private val profileRepository: ProfileRepository) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
 
     fun onEmailChange(email: String) {
-        _uiState.update { it.copy(email = email, error = null, noProfileFound = false) }
+        _uiState.update { it.copy(email = email, error = null) }
     }
 
-    fun logIn(onLoggedIn: () -> Unit) {
+    fun logIn(onLoggedIn: () -> Unit, onNewUser: () -> Unit) {
         val email = _uiState.value.email
         val error = ProfileValidator.emailError(email)
         if (error != null) {
@@ -37,7 +40,7 @@ class LoginViewModel(private val profileRepository: ProfileRepository) : ViewMod
             if (profileRepository.findByEmail(email) != null) {
                 onLoggedIn()
             } else {
-                _uiState.update { it.copy(noProfileFound = true) }
+                onNewUser()
             }
         }
     }

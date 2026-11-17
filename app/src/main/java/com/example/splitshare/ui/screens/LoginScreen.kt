@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -51,18 +50,11 @@ fun LoginScreen(
             modifier = Modifier.fillMaxWidth(),
         )
 
-        if (uiState.noProfileFound) {
-            Text(
-                text = "No profile found for this email. Create one to continue.",
-                color = MaterialTheme.colorScheme.error,
-            )
-        }
-
-        Button(onClick = { viewModel.logIn(onLoggedIn) }, modifier = Modifier.fillMaxWidth()) {
+        Button(
+            onClick = { viewModel.logIn(onLoggedIn = onLoggedIn, onNewUser = onCreateProfile) },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
             Text("Log in")
-        }
-        OutlinedButton(onClick = onCreateProfile, modifier = Modifier.fillMaxWidth()) {
-            Text("Create profile")
         }
     }
 }
