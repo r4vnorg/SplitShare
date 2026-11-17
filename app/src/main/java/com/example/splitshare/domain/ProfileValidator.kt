@@ -1,6 +1,9 @@
 package com.example.splitshare.domain
 
-/** Validation rules for profile input. Returns an error message per field, or null when valid. */
+/**
+ * Validation rules for profile input. Returns an error message per field, or null when valid.
+ * Also used for [com.example.splitshare.domain.model.Person] fields (group participants) — same shape.
+ */
 object ProfileValidator {
 
     private val emailRegex = Regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")
