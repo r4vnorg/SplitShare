@@ -20,8 +20,8 @@ import com.example.splitshare.viewmodel.CreateGroupViewModel
 
 /** S5 Create group (US4): name and description for a new shared occasion. */
 @Composable
-fun CreateGroupScreen(
-    onSaved: () -> Unit,
+fun CreateGroupScreen(                                                                                                                                                                                                                                            
+    onSaved: (groupId: String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: CreateGroupViewModel = viewModel(factory = AppViewModelProvider.Factory),
 ) {
