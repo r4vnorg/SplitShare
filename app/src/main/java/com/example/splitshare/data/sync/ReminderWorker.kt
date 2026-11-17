@@ -5,7 +5,6 @@ import androidx.work.CoroutineWorker
 import androidx.work.Data
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
-import com.example.splitshare.domain.MoneyFormatter
 
 /** US12: delivers one queued reminder, retrying with backoff, and tells the user the outcome (NFR-K3). */
 class ReminderWorker(
@@ -24,7 +23,7 @@ class ReminderWorker(
         val success = runCatching { syncService.sendReminder(groupId, personId, amountMinor) }.getOrDefault(false)
         return when {
             success -> {
-                syncNotifier.notifySynced("Reminder sent", "$name was reminded about ${MoneyFormatter.format(amountMinor)}.")
+                syncNotifier.notifySynced("Reminder sent", "$name was reminded.")
                 Result.success()
             }
             runAttemptCount >= MAX_ATTEMPTS -> {
