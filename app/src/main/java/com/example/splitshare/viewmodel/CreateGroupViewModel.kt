@@ -28,7 +28,8 @@ class CreateGroupViewModel(private val groupRepository: GroupRepository) : ViewM
     fun onDescriptionChange(description: String) =
         _uiState.update { it.copy(description = description, descriptionError = null) }
 
-    fun save(onSaved: () -> Unit) {
+    /** [onSaved] receives the new group's id so the caller can navigate straight to its detail screen. */
+    fun save(onSaved: (groupId: String) -> Unit) {
         val state = _uiState.value
         val nameError = GroupValidator.nameError(state.name)
         val descriptionError = GroupValidator.descriptionError(state.description)
@@ -37,8 +38,8 @@ class CreateGroupViewModel(private val groupRepository: GroupRepository) : ViewM
             return
         }
         viewModelScope.launch {
-            groupRepository.createGroup(state.name.trim(), state.description.trim())
-            onSaved()
+            val group = groupRepository.createGroup(state.name.trim(), state.description.trim())
+            onSaved(group.id)
         }
     }
 }

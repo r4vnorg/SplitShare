@@ -53,7 +53,12 @@ fun AppNavigation(navController: NavHostController, modifier: Modifier = Modifie
             )
         }
         composable(Routes.CREATE_GROUP) {
-            CreateGroupScreen(onSaved = { navController.popBackStack() })
+            CreateGroupScreen(onSaved = { groupId ->                                                                                                                                                                                                                            
+                                                                                                                                                                                                        
+                                                    navController.navigate(Routes.groupDetail(groupId)) {                                                                                                                                                                                         
+                                                        popUpTo(Routes.CREATE_GROUP) { inclusive = true }                                                                                                                                                                                         
+                                                    }                                                                                                                                                                                                                                             
+                                                },)
         }
         composable(
             route = Routes.GROUP_DETAIL,
