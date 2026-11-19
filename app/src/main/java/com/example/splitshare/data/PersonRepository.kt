@@ -8,6 +8,7 @@ interface PersonRepository {
 
     fun observeAll(): Flow<List<Person>>
 
+    suspend fun findById(id: String): Person?
     suspend fun findByEmail(email: String): Person?
 
     /** Returns the existing person if [email] matches one, otherwise creates and returns a new one. */

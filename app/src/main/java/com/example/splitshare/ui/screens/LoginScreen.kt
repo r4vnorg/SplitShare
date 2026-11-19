@@ -51,10 +51,18 @@ fun LoginScreen(
         )
 
         Button(
-            onClick = { viewModel.logIn(onLoggedIn = onLoggedIn, onNewUser = onCreateProfile) },
+            onClick = { viewModel.logIn(onLoggedIn = onLoggedIn) },
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text("Log in")
         }
+
+        Button(
+            onClick = { onCreateProfile() },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text("Create profile")
+        }
+
     }
 }

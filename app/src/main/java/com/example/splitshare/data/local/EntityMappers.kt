@@ -32,3 +32,5 @@ fun ExpenseWithSplits.toDomain(): Expense = Expense(
     syncStatus = expense.syncStatus,
     splits = splits.map { ExpenseSplit(personId = it.personId, shareMinor = it.shareMinor) },
 )
+
+fun Person.toEntity(): PersonEntity = PersonEntity(id = id, name = name, email = email, phone = phone)

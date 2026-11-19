@@ -2,10 +2,12 @@ package com.example.splitshare.data.local
 
 import androidx.room.Dao
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import com.example.splitshare.data.local.entity.ExpenseEntity
 import com.example.splitshare.data.local.entity.ExpenseWithSplits
+import com.example.splitshare.domain.model.Expense
 import com.example.splitshare.domain.model.SyncStatus
 import kotlinx.coroutines.flow.Flow
 
@@ -14,6 +16,9 @@ interface ExpenseDao {
 
     @Insert
     suspend fun insert(expense: ExpenseEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(expense: ExpenseEntity)
 
     @Transaction
     @Query("SELECT * FROM expenses WHERE groupId = :groupId ORDER BY createdAt DESC")
@@ -29,4 +34,7 @@ interface ExpenseDao {
 
     @Query("UPDATE expenses SET syncStatus = :status WHERE id = :expenseId")
     suspend fun updateSyncStatus(expenseId: String, status: SyncStatus)
+
+    @Query ("DELETE FROM expenses")
+    suspend fun flushCache();
 }

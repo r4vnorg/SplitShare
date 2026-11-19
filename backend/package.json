@@ -11,6 +11,7 @@
   },
   "scripts": {
     "migrate": "node migrate.ts",
-    "serve": "node start.ts"
+    "serve": "node start.ts",
+    "dump": "node dump.ts"
   }
 }

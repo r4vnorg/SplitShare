@@ -1,7 +1,7 @@
 import { DatabaseSync } from 'node:sqlite';
 import express from 'express';
-import { readFileSync } from 'node:fs';
 import bodyParser from 'body-parser';
+import { randomUUID } from 'node:crypto';
 
 /* Types */
 interface Dictionary<T> {
@@ -53,19 +53,57 @@ const withIdempotency = (
     return res.status(result.status).send(result.body);
 };
 
+
 /* Consts */ 
 const app = express()
 app.use(bodyParser.json())
 const db = new DatabaseSync('db.sqlite') 
 const responses: Dictionary<CachedResponse> = {}
 
+// ── Auth ──────────────────────────────────────────────────────────────
+app.post('/login', (req, res) => {
+    console.log(req.method, req.url)
+
+    /* Auth requests are not idempotents, do not care about consistency */
+    const { email } = req.body
+
+    let query
+    try {
+        query = db.prepare(`SELECT * FROM people WHERE email = ?`).get(email)
+    } catch (err) {
+        return sendDbError(res, err, 404, 'User account not found')
+    }
+
+    if (typeof query === 'undefined')
+        return res.status(404).send('User account not found')
+
+    res.status(200).send(query)
+})
+
+app.post('/register', (req, res) => {
+    console.log(req.method, req.url)
+
+    const { name, email, phone } = req.body
+    const id = randomUUID()
+
+    try {
+
+        db.prepare("INSERT INTO people(id, name, email, phone) VALUES (?, ?, ?, ?)")
+            .run(id, name, email, phone)
+
+    } catch(err) {
+        return sendDbError(res, err, 400, 'Unable to create user account')
+    }
+
+    return res.status(201).send({id: id, name: name, email: email, phone: phone})
+})
 
 // ── People (directory) ─────────────────────────────────────────────────
 
 app.get('/people', (req, res) => {
     console.log(req.method, req.url)
 
-    let query;
+    let query
     try {
         query = db.prepare(`SELECT * FROM people`).all()
     } catch (err) {

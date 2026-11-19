@@ -2,6 +2,7 @@ package com.example.splitshare.data.local
 
 import androidx.room.Dao
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.example.splitshare.data.local.entity.GroupEntity
 import com.example.splitshare.data.local.entity.GroupWithParticipantCount
@@ -13,6 +14,9 @@ interface GroupDao {
 
     @Insert
     suspend fun insert(group: GroupEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(group: GroupEntity)
 
     @Query("SELECT * FROM groups WHERE id = :groupId")
     fun observe(groupId: String): Flow<GroupEntity?>
@@ -33,4 +37,7 @@ interface GroupDao {
 
     @Query("UPDATE groups SET syncStatus = :status WHERE id = :groupId")
     suspend fun updateSyncStatus(groupId: String, status: SyncStatus)
+
+    @Query("DELETE FROM groups")
+    suspend fun flushCache();
 }

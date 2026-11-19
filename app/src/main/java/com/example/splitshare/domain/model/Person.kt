@@ -7,3 +7,7 @@ data class Person(
     val email: String,
     val phone: String,
 )
+
+data class PersonRef(
+    val id: String
+)
