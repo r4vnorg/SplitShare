@@ -36,4 +36,7 @@ interface GroupParticipantDao {
         "UPDATE group_participants SET syncStatus = :status WHERE groupId = :groupId AND personId = :personId"
     )
     suspend fun updateSyncStatus(groupId: String, personId: String, status: SyncStatus)
+
+    @Query("DELETE FROM group_participants")
+    suspend fun flushCache()
 }

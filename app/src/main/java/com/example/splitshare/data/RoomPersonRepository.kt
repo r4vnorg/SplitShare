@@ -9,6 +9,7 @@ import com.example.splitshare.domain.model.Person
 import com.example.splitshare.network.NetworkClient
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import java.util.UUID
 
@@ -22,16 +23,14 @@ class RoomPersonRepository(private val personDao: PersonDao,
         personDao.findByEmail(email.normalized())?.toDomain()
 
     override suspend fun findById(id: String) : Person? {
+        personDao.findById(id.normalized()).first()?.let{ return it.toDomain() }
 
-        Log.d("TEST", personDao.findById(id).first().toString())
-        return try {
-            networkClient.networkBoundResource(
-                cache = { personDao.findById(id) },
-                fetch = { networkClient.api.fetchPerson(id) },
-                saveFetchResult = { person -> personDao.insert(person.toEntity()) }
-            ).first()?.toDomain()
-        } catch (e: NoSuchElementException) {
-            null
+        try {
+            val person = networkClient.api.fetchPerson(id)
+            personDao.insert(person.toEntity())
+            return person
+        } catch (e: Exception) {
+            return null //Error or not found - todo: retry
         }
     }
 

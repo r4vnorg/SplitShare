@@ -46,6 +46,12 @@ object AppViewModelProvider {
                 groupRepository = splitShareApplication().container.groupRepository,
             )
         }
+
+        initializer {
+            UserDetailViewModel(
+                authProvider = splitShareApplication().container.authProvider
+            )
+        }
     }
 }
 

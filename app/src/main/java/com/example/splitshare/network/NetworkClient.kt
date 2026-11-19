@@ -1,5 +1,6 @@
 package com.example.splitshare.network
 
+import android.util.Log
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
@@ -53,6 +54,7 @@ class NetworkClient(
         emitAll(cache())
 
         try {
+            Log.w("ASDASD", "GOT HERE")
             val remote = fetch() ?: return@flow
             saveFetchResult(remote)
         } catch (_: Exception) {

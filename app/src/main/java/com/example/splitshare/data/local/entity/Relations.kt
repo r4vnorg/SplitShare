@@ -1,5 +1,6 @@
 package com.example.splitshare.data.local.entity
 
+import android.app.Person
 import androidx.room.Embedded
 import androidx.room.Relation
 import com.example.splitshare.domain.model.SyncStatus
@@ -24,4 +25,13 @@ data class GroupWithParticipantCount(
     val createdAt: Long,
     val syncStatus: SyncStatus,
     val participantCount: Int,
+)
+
+data class UserWithPerson(
+    @Embedded val user: UserEntity,
+    @Relation(
+        parentColumn = "id",
+        entityColumn = "id"
+    )
+    val profile: PersonEntity   // single object = one-to-one
 )

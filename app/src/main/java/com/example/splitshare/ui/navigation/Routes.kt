@@ -7,6 +7,7 @@ package com.example.splitshare.ui.navigation
 object Routes {
     const val LOGIN = "login"                     // S1
     const val CREATE_PROFILE = "create_profile"   // S2
+    const val VIEW_PROFILE = "view_profile"
     const val GROUP_LIST = "group_list"           // S4
     const val CREATE_GROUP = "create_group"       // S5 (placeholder)
 

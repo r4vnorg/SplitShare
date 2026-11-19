@@ -19,10 +19,15 @@ import com.example.splitshare.ui.screens.GroupDetailScreen
 import com.example.splitshare.ui.screens.GroupListScreen
 import com.example.splitshare.ui.screens.LoginScreen
 import com.example.splitshare.ui.screens.ManageMembersScreen
+import com.example.splitshare.ui.screens.UserDetailScreen
 import com.example.splitshare.viewmodel.AppViewModelProvider
 
 @Composable
-fun AppNavigation(navController: NavHostController, modifier: Modifier = Modifier) {
+fun AppNavigation(
+    navController: NavHostController,
+    modifier: Modifier = Modifier,
+    hasUser: Boolean = false
+) {
     // After login or profile creation, back must not return to S1/S2 (crossbar in the navigation model).
     val goToGroupList = {
         navController.navigate(Routes.GROUP_LIST) {
@@ -30,9 +35,15 @@ fun AppNavigation(navController: NavHostController, modifier: Modifier = Modifie
         }
     }
 
+    val logOut = {
+        navController.navigate(Routes.LOGIN) {
+            popUpTo(navController.graph.startDestinationId) { inclusive = true }
+        }
+    }
+
     NavHost(
         navController = navController,
-        startDestination = Routes.LOGIN,
+        startDestination = if(hasUser) Routes.GROUP_LIST else Routes.LOGIN,
         modifier = modifier,
     ) {
         composable(Routes.LOGIN) {
@@ -44,12 +55,17 @@ fun AppNavigation(navController: NavHostController, modifier: Modifier = Modifie
         composable(Routes.CREATE_PROFILE) {
             CreateProfileScreen(onSaved = goToGroupList)
         }
+        composable(Routes.VIEW_PROFILE) {
+            UserDetailScreen(
+                afterLogout = logOut
+            )
+        }
         composable(Routes.GROUP_LIST) {
             GroupListScreen(
                 onCreateGroup = { navController.navigate(Routes.CREATE_GROUP) },
                 onGroupClick = { groupId -> navController.navigate(Routes.groupDetail(groupId)) },
                 // TODO US2: navigate to Profile & notification settings once it exists.
-                onProfileClick = {},
+                onProfileClick = { navController.navigate(Routes.VIEW_PROFILE) },
             )
         }
         composable(Routes.CREATE_GROUP) {

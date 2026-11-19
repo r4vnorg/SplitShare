@@ -17,10 +17,10 @@ import com.example.splitshare.data.sync.SyncNotifier
 import com.example.splitshare.data.sync.SyncScheduler
 import com.example.splitshare.data.sync.SyncService
 import com.example.splitshare.network.NetworkClient
+import kotlinx.coroutines.runBlocking
 
 /** Manual dependency injection: one shared instance of each dependency. */
 class AppContainer(context: Context) {
-
     private val database = Room.databaseBuilder(context, AppDatabase::class.java, "splitshare.db")
         .fallbackToDestructiveMigration(true)
         .build()
@@ -36,7 +36,12 @@ class AppContainer(context: Context) {
     val syncService: SyncService = NetworkSyncService(networkClient.api)
     val syncNotifier = SyncNotifier(context)
 
-    val authProvider = AuthProvider(database.userAuthDao(), database.personDao(), networkClient)
+    val authProvider = AuthProvider(
+        authDao = database.userAuthDao(),
+        peopleDao = database.personDao(),
+        flushDatabases = { flushDatabases() },
+        networkClient = networkClient
+    )
 
     val reminderRepository: ReminderRepository = SchedulingReminderRepository(syncScheduler)
 
@@ -55,4 +60,13 @@ class AppContainer(context: Context) {
         syncScheduler = syncScheduler,
         networkClient = networkClient,
     )
+
+    suspend fun flushDatabases() {
+
+        database.expenseDao().flushCache()
+        database.userAuthDao().flushCache()
+        database.groupDao().flushCache()
+        database.expenseSplitDao().flushCache()
+        database.groupParticipantDao().flushCache()
+    }
 }
