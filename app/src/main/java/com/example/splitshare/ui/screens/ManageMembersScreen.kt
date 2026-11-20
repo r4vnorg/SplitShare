@@ -12,6 +12,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -22,9 +24,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -43,6 +49,7 @@ fun ManageMembersScreen(
     viewModel: ManageMembersViewModel = viewModel(factory = AppViewModelProvider.Factory),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    var showAlertDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         modifier = modifier,
@@ -81,7 +88,9 @@ fun ManageMembersScreen(
                         trailingContent = {
                             when(member.syncStatus) {
                                 SyncStatus.SYNCED ->
-                                    IconButton(onClick = { viewModel.removeParticipant(member.personId) }) {
+                                    IconButton(onClick = { /*viewModel.removeParticipant(member.personId)*/
+                                            showAlertDialog = true
+                                        }) {
                                         Icon(Icons.Default.Delete, contentDescription = "Remove ${member.name}")
                                     }
                                 else -> null
@@ -108,5 +117,17 @@ fun ManageMembersScreen(
                 Text("Add")
             }
         }
+    }
+    if (showAlertDialog) {
+        AlertDialog(
+            onDismissRequest = { showAlertDialog = false },
+            title = { Text("Alert") },
+            text = { Text("This functionality is not yet implemented") },
+            confirmButton = {
+                TextButton(onClick = { showAlertDialog = false }) {
+                    Text("OK")
+                }
+            }
+        )
     }
 }
