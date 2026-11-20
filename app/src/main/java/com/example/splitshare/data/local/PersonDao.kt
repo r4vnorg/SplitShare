@@ -17,7 +17,7 @@ interface PersonDao {
     suspend fun findByEmail(normalizedEmail: String): PersonEntity?
 
     @Query("SELECT * FROM people WHERE id = :id LIMIT 1")
-    fun findById(id: String) : Flow<PersonEntity?>
+    suspend fun findById(id: String) : PersonEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(person: PersonEntity)

@@ -3,14 +3,14 @@ package com.example.splitshare.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.splitshare.data.GroupRepository
-import com.example.splitshare.domain.model.GroupSummary
+import com.example.splitshare.domain.model.GroupInfo
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
 data class GroupListUiState(
-    val groups: List<GroupSummary> = emptyList(),
+    val groups: List<GroupInfo> = emptyList(),
     val isLoading: Boolean = true,
 )
 

@@ -42,6 +42,7 @@ class LoginViewModel(private val authProvider: AuthProvider) : ViewModel() {
             when (val result = authProvider.tryAuth(email)) {
                 is NetworkStatus.Success<*> -> onLoggedIn()
                 is NetworkStatus.Error -> _uiState.update { it.copy(error = result.message) }
+                is NetworkStatus.Pending -> null
             }
         }
     }

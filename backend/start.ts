@@ -172,6 +172,51 @@ app.delete('/people/:id', (req, res) => {
     })
 })
 
+// ── People → Groups ────────────────────────────────────────────────────
+
+app.get('/people/:id/groups', (req, res) => {
+    console.log(req.method, req.url)
+
+    try {
+        if (typeof db.prepare(`SELECT * FROM people WHERE id = ?`).get(req.params.id) === 'undefined')
+            return res.status(404).send("User not found")
+
+        const groups = db.prepare(`
+            SELECT g.id, g.name, g.description, g.createdAt,
+                   (SELECT COUNT(*) FROM participants p2
+                    WHERE p2.groupId = g.id AND p2.isActive = 1) AS participantCount
+            FROM groups g
+            INNER JOIN participants p ON p.groupId = g.id
+            WHERE p.personId = ?
+        `).all(req.params.id)
+
+        const participants = db.prepare(`
+            SELECT * FROM participants
+            WHERE groupId IN (SELECT g.id FROM groups g INNER JOIN participants p ON p.groupId = g.id WHERE p.personId = ?)
+        `).all(req.params.id)
+
+        const result = (groups as any[]).map((group: any) => ({
+            group: {
+                id: group.id,
+                name: group.name,
+                description: group.description,
+                createdAt: group.createdAt,
+            },
+            participants: (participants as any[]).filter((p: any) => p.groupId === group.id).map((p: any) => ({
+                groupId: p.groupId,
+                personId: p.personId,
+                addedAt: p.addedAt,
+                removedAt: null,
+                syncStatus: 'SYNCED',
+            })),
+        }))
+
+        res.status(200).send(result)
+    } catch (err) {
+        return sendDbError(res, err, 500, `Failed to fetch groups for person ${req.params.id}`);
+    }
+})
+
 // ── Groups ─────────────────────────────────────────────────────────────
 
 app.get('/groups', (req, res) => {
@@ -206,14 +251,26 @@ app.post('/groups', (req, res) => {
     console.log(req.method, req.url)
 
     withIdempotency(req, res, () => {
-        const { id, name, description, createdAt } = req.body
+        const uuid = randomUUID()
+        const timestamp = Date.now()
+        const { name, description, creatorID } = req.body
+
         try {
-            db.prepare(`INSERT INTO groups (id, name, description, createdAt) VALUES (?, ?, ?, ?)`).run(id, name, description, createdAt)
+            db.prepare(`INSERT INTO groups (id, name, description, createdAt) VALUES (?, ?, ?, ?)`).run(uuid, name, description ?? '', timestamp)
+            db.prepare(`INSERT INTO participants (groupId, personId, isActive, addedAt) VALUES (?, ?, ?, ?)`).run(uuid, creatorID, 1, timestamp)
         } catch (err) {
-            sendDbError(res, err, 500, `Failed to create group`);
-            return { status: 500, body: null }
+            return { status: 500, body: `Failed to create group` }
         }
-        return { status: 201, body: { id, name, description, createdAt } }
+        return { status: 201, body: {
+            group: { id: uuid, name: name, description: description, createdAt: timestamp },
+            participants: [{
+                groupId: uuid,
+                personId: creatorID,
+                addedAt: timestamp,
+                removedAt: null,
+                syncStatus: 'SYNCED',
+            }],
+        }}
     })
 })
 
@@ -266,14 +323,15 @@ app.post('/groups/:groupId/participants', (req, res) => {
     withIdempotency(req, res, () => {
         const { person, isActive } = req.body
         const personId = person.id
+        const addedAt = Date.now()
         try {
-            db.prepare(`INSERT INTO participants (groupId, personId, person, isActive) VALUES (?, ?, ?, ?)`)
-                .run(req.params.groupId, personId, JSON.stringify(person), isActive)
+            db.prepare(`INSERT INTO participants (groupId, personId, isActive, addedAt) VALUES (?, ?, ?, ?)`)
+                .run(req.params.groupId, personId, isActive, addedAt)
         } catch (err) {
             sendDbError(res, err, 500, `Failed to add participant to group ${req.params.groupId}`);
             return { status: 500, body: null }
         }
-        return { status: 201, body: { groupId: req.params.groupId, personId, person, isActive } }
+        return { status: 201, body: { groupId: req.params.groupId, personId, person, isActive, addedAt } }
     })
 })
 

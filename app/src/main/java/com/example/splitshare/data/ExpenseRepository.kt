@@ -2,7 +2,7 @@ package com.example.splitshare.data
 
 import com.example.splitshare.domain.model.Expense
 import com.example.splitshare.domain.model.SyncStatus
-import com.example.splitshare.network.NetworkBoundResource
+import com.example.splitshare.network.NetworkStatus
 import kotlinx.coroutines.flow.Flow
 
 interface ExpenseRepository {
@@ -18,7 +18,7 @@ interface ExpenseRepository {
     fun observeWithSync(
         groupId: String,
         pollIntervalMillis: Long = 30_000,
-    ): Flow<NetworkBoundResource<List<Expense>>>
+    ): Flow<NetworkStatus<List<Expense>>>
 
     /** [splits] must sum exactly to [amountMinor] (callers validate via SplitValidator; this is a defensive re-check). */
     suspend fun addExpense(

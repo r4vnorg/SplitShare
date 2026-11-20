@@ -48,9 +48,9 @@ class GroupDaoTest {
             GroupParticipantEntity(groupId = "g1", personId = "p2", addedAt = 1L, removedAt = 2L)
         )
 
-        val summaries = db.groupDao().observeAllWithParticipantCount().first()
+        val summaries = db.groupDao().observeAllWithParticipants().first()
 
-        assertEquals(1, summaries.single().participantCount)
+        assertEquals(1, summaries.single().participants.size)
     }
 
     @Test

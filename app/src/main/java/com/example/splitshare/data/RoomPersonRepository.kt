@@ -16,36 +16,18 @@ import java.util.UUID
 class RoomPersonRepository(private val personDao: PersonDao,
                            private val networkClient: NetworkClient) : PersonRepository {
 
-    override fun observeAll(): Flow<List<Person>> =
-        personDao.observeAll().map { people -> people.map { it.toDomain() } }
-
     override suspend fun findByEmail(email: String): Person? =
-        personDao.findByEmail(email.normalized())?.toDomain()
-
-    override suspend fun findById(id: String) : Person? {
-        personDao.findById(id.normalized()).first()?.let{ return it.toDomain() }
-
-        try {
-            val person = networkClient.api.fetchPerson(id)
-            personDao.insert(person.toEntity())
-            return person
-        } catch (e: Exception) {
-            return null //Error or not found - todo: retry
-        }
-    }
-
-    override suspend fun upsertAndGet(name: String, email: String, phone: String): Person {
-        val normalizedEmail = email.normalized()
-        personDao.findByEmail(normalizedEmail)?.let { return it.toDomain() }
-        val person = PersonEntity(
-            id = UUID.randomUUID().toString(),
-            name = name.trim(),
-            email = normalizedEmail,
-            phone = phone.trim(),
+        networkClient.networkBoundEntity(
+            cache = suspend { personDao.findByEmail(email.normalized())?.toDomain() },
+            fetch = { networkClient.api.fetchPerson("id") }, //TODO:
+            save  = { person -> personDao.insert(person.toEntity()) }
         )
-        personDao.insert(person)
-        return person.toDomain()
-    }
+    override suspend fun findById(id: String) : Person? =
+        networkClient.networkBoundEntity(
+            cache = suspend { personDao.findById(id.normalized())?.toDomain() },
+            fetch = { networkClient.api.fetchPerson(id) },
+            save  = { person -> personDao.insert(person.toEntity()) }
+        )
 
     private fun String.normalized(): String = trim().lowercase()
 }

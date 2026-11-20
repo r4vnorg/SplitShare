@@ -4,8 +4,9 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import com.example.splitshare.data.local.entity.GroupEntity
-import com.example.splitshare.data.local.entity.GroupWithParticipantCount
+import com.example.splitshare.data.local.entity.GroupEntityWithParticipants
 import com.example.splitshare.domain.model.SyncStatus
 import kotlinx.coroutines.flow.Flow
 
@@ -21,16 +22,9 @@ interface GroupDao {
     @Query("SELECT * FROM groups WHERE id = :groupId")
     fun observe(groupId: String): Flow<GroupEntity?>
 
-    @Query(
-        """
-        SELECT g.id, g.name, g.description, g.createdAt, g.syncStatus, COUNT(gp.personId) AS participantCount
-        FROM groups g
-        LEFT JOIN group_participants gp ON gp.groupId = g.id AND gp.removedAt IS NULL
-        GROUP BY g.id
-        ORDER BY g.createdAt DESC
-        """
-    )
-    fun observeAllWithParticipantCount(): Flow<List<GroupWithParticipantCount>>
+    @Transaction
+    @Query("SELECT * FROM groups ORDER BY createdAt DESC")
+    fun observeAllWithParticipants(): Flow<List<GroupEntityWithParticipants>>
 
     @Query("SELECT * FROM groups WHERE syncStatus = :status")
     suspend fun getByStatus(status: SyncStatus): List<GroupEntity>
@@ -38,6 +32,21 @@ interface GroupDao {
     @Query("UPDATE groups SET syncStatus = :status WHERE id = :groupId")
     suspend fun updateSyncStatus(groupId: String, status: SyncStatus)
 
+    @Query("""
+        UPDATE groups 
+        SET id = :newId,
+            name = :newName, 
+            description = :newDescription, 
+            createdAt = :createdAt,
+            syncStatus = :syncStatus
+        WHERE id = :templateId
+    """)
+    suspend fun replaceTemplate(templateId: String, newId: String, newName: String, newDescription: String,
+                                createdAt: Long, syncStatus: SyncStatus)
+
+    @Query("DELETE FROM groups WHERE id = :groupId")
+    suspend fun deleteGroup(groupId: String)
+
     @Query("DELETE FROM groups")
-    suspend fun flushCache();
+    suspend fun flushCache()
 }

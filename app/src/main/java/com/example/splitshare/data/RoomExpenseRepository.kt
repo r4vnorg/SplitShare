@@ -9,10 +9,11 @@ import com.example.splitshare.data.sync.SyncScheduler
 import com.example.splitshare.domain.model.Expense
 import com.example.splitshare.domain.model.ExpenseSplit
 import com.example.splitshare.domain.model.SyncStatus
-import com.example.splitshare.network.NetworkBoundResource
 import com.example.splitshare.network.NetworkClient
+import com.example.splitshare.network.NetworkStatus
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import java.util.UUID
 
@@ -51,7 +52,7 @@ class RoomExpenseRepository(
         expenseSplitDao.insertAll(
             splits.map { (personId, shareMinor) -> ExpenseSplitEntity(id, personId, shareMinor) }
         )
-        syncScheduler.scheduleSync()
+        syncScheduler.requestSync()
 
         return Expense(
             id = entity.id,
@@ -81,12 +82,12 @@ class RoomExpenseRepository(
     override fun observeWithSync(
         groupId: String,
         pollIntervalMillis: Long,
-    ): Flow<NetworkBoundResource<List<Expense>>> = networkClient.networkBoundResourceWithPolling(
+    ): Flow<NetworkStatus<List<Expense>>> = flow {} /* networkClient.networkBoundResourceWithPolling(
         cache = { expenseDao.observeExpenses(groupId).map { it.map { es -> es.toDomain() } } },
         fetch = { networkClient.api.fetchExpenses(groupId) },
         save = { networkExpenses -> saveExpenses(networkExpenses, groupId) },
         pollIntervalMillis = pollIntervalMillis,
-    )
+    )*/
 
     /**
      * Saves expenses fetched from the network to the local cache.

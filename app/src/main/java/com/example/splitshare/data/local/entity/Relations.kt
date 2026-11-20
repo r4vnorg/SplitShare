@@ -3,6 +3,7 @@ package com.example.splitshare.data.local.entity
 import android.app.Person
 import androidx.room.Embedded
 import androidx.room.Relation
+import com.example.splitshare.domain.model.Participant
 import com.example.splitshare.domain.model.SyncStatus
 
 /** A group participant joined with their [PersonEntity] details, for Manage Members / balance checks. */
@@ -17,14 +18,10 @@ data class ExpenseWithSplits(
     @Relation(parentColumn = "id", entityColumn = "expenseId") val splits: List<ExpenseSplitEntity>,
 )
 
-/** Group List row: group fields plus a computed active-participant count. */
-data class GroupWithParticipantCount(
-    val id: String,
-    val name: String,
-    val description: String,
-    val createdAt: Long,
-    val syncStatus: SyncStatus,
-    val participantCount: Int,
+/** Flat row for a group joined with one active participant and their person details. */
+data class GroupEntityWithParticipants(
+    @Embedded val group: GroupEntity,
+    @Relation(parentColumn = "id", entityColumn = "groupId") val participants: List<GroupParticipantEntity>,
 )
 
 data class UserWithPerson(

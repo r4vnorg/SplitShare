@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit
 class SyncScheduler(private val context: Context) {
 
     /** Call after any local write. Coalesces a burst of writes into one chain via APPEND_OR_REPLACE. */
-    fun scheduleSync() {
+    fun requestSync() {
         WorkManager.getInstance(context)
             .enqueueUniqueWork(UNIQUE_WORK_NAME, ExistingWorkPolicy.APPEND_OR_REPLACE, buildRequest())
     }

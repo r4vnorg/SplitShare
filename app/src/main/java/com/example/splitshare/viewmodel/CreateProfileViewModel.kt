@@ -54,6 +54,7 @@ class CreateProfileViewModel(private val authProvider: AuthProvider) : ViewModel
             when (result) {
                 is NetworkStatus.Success<*> -> onSaved()
                 is NetworkStatus.Error -> _uiState.update { it.copy(nameError = result.message) }
+                is NetworkStatus.Pending -> null
             }
         }
     }

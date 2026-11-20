@@ -86,9 +86,9 @@ class ManageMembersViewModel(
             return
         }
         viewModelScope.launch {
-            val person = personRepository.upsertAndGet(form.name, form.email, form.phone)
-            groupRepository.addParticipant(groupId, person)
-            formState.value = ManageMembersFormState()
+            //val person = personRepository.upsertAndGet(form.name, form.email, form.phone)
+            //groupRepository.addParticipant(groupId, person)
+            //formState.value = ManageMembersFormState()
         }
     }
 

@@ -1,28 +1,31 @@
 package com.example.splitshare.data
 
+import android.util.Log
 import com.example.splitshare.data.local.ExpenseDao
 import com.example.splitshare.data.local.GroupDao
 import com.example.splitshare.data.local.GroupParticipantDao
 import com.example.splitshare.data.local.entity.GroupEntity
 import com.example.splitshare.data.local.entity.GroupParticipantEntity
 import com.example.splitshare.data.local.toDomain
+import com.example.splitshare.data.local.toEntity
 import com.example.splitshare.data.sync.SyncScheduler
 import com.example.splitshare.domain.model.Group
 import com.example.splitshare.domain.model.GroupDetailData
-import com.example.splitshare.domain.model.GroupSummary
+import com.example.splitshare.domain.model.GroupInfo
 import com.example.splitshare.domain.model.Participant
 import com.example.splitshare.domain.model.PendingParticipantChange
 import com.example.splitshare.domain.model.Person
 import com.example.splitshare.domain.model.SyncStatus
-import com.example.splitshare.network.NetworkBoundResource
 import com.example.splitshare.network.NetworkClient
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.runBlocking
 import java.util.UUID
 
 class RoomGroupRepository(
+    private val authProvider: AuthProvider,
     private val groupDao: GroupDao,
     private val groupParticipantDao: GroupParticipantDao,
     private val expenseDao: ExpenseDao,
@@ -31,8 +34,26 @@ class RoomGroupRepository(
     private val networkClient: NetworkClient,
 ) : GroupRepository {
 
-    override fun observeGroups(): Flow<List<GroupSummary>> =
-        groupDao.observeAllWithParticipantCount().map { groups -> groups.map { it.toDomain() } }
+    override fun observeGroups(): Flow<List<GroupInfo>> {
+
+        val userId = runBlocking { authProvider.getUser()!!.id } //TODO: rewrite with fixed Auth
+
+        return networkClient.networkBoundContentWithPolling(
+            cache = {
+                groupDao.observeAllWithParticipants()
+                    .map { list -> list.map { it.toDomain() } }
+            },
+            fetch = { networkClient.api.fetchUserGroups(userId) },
+            save =  { list -> list.forEach {
+                    Log.e("TEST", it.group.name)
+                    groupDao.upsert(it.group.toEntity(SyncStatus.SYNCED))
+                    it.participants.forEach {
+                        participant -> groupParticipantDao.upsert(participant.toEntity())
+                    }
+                }
+            }
+        );
+    }
 
     override fun observeGroup(groupId: String): Flow<Group?> =
         groupDao.observe(groupId).map { it?.toDomain() }
@@ -40,32 +61,26 @@ class RoomGroupRepository(
     override fun observeParticipants(groupId: String): Flow<List<Participant>> =
         groupParticipantDao.observeActiveWithPerson(groupId).map { rows -> rows.map { it.toDomain() } }
 
-    override suspend fun createGroup(name: String, description: String): Group {
-        val now = System.currentTimeMillis()
-        val group = GroupEntity(
-            id = UUID.randomUUID().toString(),
-            name = name.trim(),
-            description = description.trim(),
-            createdAt = now,
-        )
-        groupDao.insert(group)
+    override suspend fun createGroup(name: String, description: String) {
 
-        //personRepository.profile.first()?.let { profile ->
-        //    val owner = personRepository.upsertAndGet(profile.name, profile.email, profile.phone)
-        //    groupParticipantDao.upsert(
-        //        GroupParticipantEntity(groupId = group.id, personId = owner.id, addedAt = now)
-        //    )
-        //}
+        /* Just insert, Sync takes care of rest */
+        groupDao.insert(GroupEntity(
+            id = UUID.randomUUID().toString(),  //Temporary
+            name = name,
+            description = description,
+            createdAt = 0,
+            syncStatus = SyncStatus.SOFT_CREATE
+        ))
 
-        syncScheduler.scheduleSync()
-        return group.toDomain()
+        syncScheduler.requestSync()
     }
+
 
     override suspend fun addParticipant(groupId: String, person: Person) {
         groupParticipantDao.upsert(
             GroupParticipantEntity(groupId = groupId, personId = person.id, addedAt = System.currentTimeMillis())
         )
-        syncScheduler.scheduleSync()
+        syncScheduler.requestSync()
     }
 
     override suspend fun removeParticipant(groupId: String, personId: String) {
@@ -75,11 +90,17 @@ class RoomGroupRepository(
             removedAt = System.currentTimeMillis(),
             status = SyncStatus.PENDING,
         )
-        syncScheduler.scheduleSync()
+        syncScheduler.requestSync()
     }
 
-    override suspend fun getPendingGroups(): List<Group> =
-        groupDao.getByStatus(SyncStatus.PENDING).map { it.toDomain() }
+    override suspend fun getPendingCreatedGroups(): List<Group> =
+        groupDao.getByStatus(SyncStatus.SOFT_CREATE).map { it.toDomain() }
+
+    override suspend fun replaceTemporaryGroup(old: Group, new: GroupInfo) {
+        groupDao.upsert(new.group.toEntity(SyncStatus.SYNCED))
+        groupDao.deleteGroup(old.id)
+        new.participants.forEach { groupParticipantDao.upsert(it.toEntity()) }
+    }
 
     override suspend fun setGroupSyncStatus(groupId: String, status: SyncStatus) =
         groupDao.updateSyncStatus(groupId, status)
@@ -107,17 +128,17 @@ class RoomGroupRepository(
     override fun observeDetailData(
         groupId: String,
         pollIntervalMillis: Long,
-    ): Flow<GroupDetailData> = networkClient.networkBoundResourceWithPolling(
+    ): Flow<GroupDetailData> = flow{}/*networkClient.networkBoundContentWithPolling(
         cache = { groupDao.observe(groupId) },
         fetch = { networkClient.api.fetchGroup(groupId) },
         save = { networkGroup -> saveGroup(networkGroup, groupId) },
         pollIntervalMillis = pollIntervalMillis,
     ).map { resource ->
         when (resource) {
-            is NetworkBoundResource.Success<*> -> (resource as NetworkBoundResource.Success<*>).data as? GroupEntity
-            is NetworkBoundResource.Stale<*> -> (resource as NetworkBoundResource.Stale<*>).data as? GroupEntity
+        //    is .Success<*> -> (resource as NetworkBoundResource.Success<*>).data as? GroupEntity
+        //    is NetworkBoundResource.Stale<*> -> (resource as NetworkBoundResource.Stale<*>).data as? GroupEntity
             else -> null
-        }?.toDomain()
+        }
     }.combine(
         groupParticipantDao.observeActiveWithPerson(groupId).map { it.map { row -> row.toDomain() } },
     ) { group, participants ->
@@ -126,7 +147,7 @@ class RoomGroupRepository(
         expenseDao.observeExpenses(groupId).map { it.map { es -> es.toDomain() } },
     ) { (group, participants), expenses ->
         GroupDetailData(group = group, participants = participants, expenses = expenses)
-    }
+    }*/
 
     /**
      * Saves a group fetched from the network to the local cache.

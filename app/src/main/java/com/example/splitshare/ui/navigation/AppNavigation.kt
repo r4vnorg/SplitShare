@@ -69,12 +69,11 @@ fun AppNavigation(
             )
         }
         composable(Routes.CREATE_GROUP) {
-            CreateGroupScreen(onSaved = { groupId ->                                                                                                                                                                                                                            
-                                                                                                                                                                                                        
-                                                    navController.navigate(Routes.groupDetail(groupId)) {                                                                                                                                                                                         
-                                                        popUpTo(Routes.CREATE_GROUP) { inclusive = true }                                                                                                                                                                                         
-                                                    }                                                                                                                                                                                                                                             
-                                                },)
+            CreateGroupScreen(onSaved = {
+                navController.navigate(Routes.GROUP_LIST) {
+                    popUpTo(Routes.CREATE_GROUP) { inclusive = true }
+                }
+            })
         }
         composable(
             route = Routes.GROUP_DETAIL,

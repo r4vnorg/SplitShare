@@ -1,33 +1,38 @@
 package com.example.splitshare.network
 
 import android.util.Log
+import com.example.splitshare.data.local.toDomain
+import com.example.splitshare.data.local.toEntity
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
+import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.util.UUID
 import java.util.concurrent.TimeUnit
+import kotlin.Unit
 import kotlin.time.Duration.Companion.milliseconds
 
 class NetworkClient(
-    private val baseUrl: String = "http://10.0.2.2:8080/",
+    private val baseUrl: String = "http://10.0.2.2:8080/"
 ) {
     private val retrofit by lazy {
 
-        val retryInterceptor = RetryInterceptor(maxRetries = 3)
         val logging = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
         }
 
         val client = OkHttpClient.Builder()
-            .addInterceptor(retryInterceptor)
             .addInterceptor(logging)
-            .connectTimeout(15, TimeUnit.SECONDS)
-            .readTimeout(15, TimeUnit.SECONDS)
             .build()
 
         Retrofit.Builder()
@@ -37,29 +42,40 @@ class NetworkClient(
             .build()
     }
 
-    val api: NetworkAPI by lazy {
-        retrofit.create(NetworkAPI::class.java)
+    val api: NetworkAPI by lazy { retrofit.create(NetworkAPI::class.java) }
+
+
+    /* Simple error handler wrapper for requests */
+    suspend inline fun <T> executeRequest(
+        crossinline fetch: suspend (id: String) -> Response<T>,
+        reqID: String = UUID.randomUUID().toString()
+        ) : T {
+
+        val res = fetch(reqID)
+        if (res.isSuccessful)
+            return res.body()!!
+        else
+            res.errorBody()?.string()?.let { throw Exception(it) }
+
+        throw Exception(res.code().toString())
     }
 
     /**
-     * Local-first flow: emits cached data immediately, then fetches from the network once.
-     * The existing lightweight variant — no polling.
+     * Function to fetch a single entity, either from cache or if null, from network
      */
-    inline fun <Cache, Network> networkBoundResource(
-        crossinline cache: () -> Flow<Cache>,
-        crossinline fetch: suspend () -> Network?,
-        crossinline saveFetchResult: suspend (Network) -> Unit,
-    ): Flow<Cache> = flow {
-
-        emitAll(cache())
-
-        try {
-            Log.w("ASDASD", "GOT HERE")
-            val remote = fetch() ?: return@flow
-            saveFetchResult(remote)
-        } catch (_: Exception) {
-            // Network failure is silent; the UI already has cached data.
-        }
+    suspend inline fun <T> networkBoundEntity(
+        crossinline cache: suspend () -> T?,
+        crossinline fetch: suspend () -> T,
+        crossinline save: suspend (T) -> Unit,
+    ): T? {
+         cache()?.let { return it }
+         try {
+             val entity = fetch()
+             save(entity)
+             return null
+         } catch (e: Exception) {
+             return null
+         }
     }
 
     /**
@@ -73,60 +89,27 @@ class NetworkClient(
      *    if there is no cache), so the UI can show "data may be outdated".
      * 5. Every [pollIntervalMillis], repeats steps 3-4 in the background.
      */
-    fun <Cache, Network> networkBoundResourceWithPolling(
-        cache: () -> Flow<Cache>,
-        fetch: suspend () -> Network,
-        save: suspend (Network) -> Unit,
+    fun <T> networkBoundContentWithPolling(
+        cache: suspend () -> Flow<T>,
+        fetch: suspend () -> T,
+        save: suspend (T) -> Unit,
         pollIntervalMillis: Long = 30_000,
-    ): Flow<NetworkBoundResource<Cache>> = flow {
-
-        emit(NetworkBoundResource.Loading)
-
-        var lastCached: Any? = null
+    ): Flow<T> = channelFlow {
 
         // Emit cached data immediately so the UI is never blank
-        cache().take(1).collect { value ->
-            lastCached = value
-            @Suppress("UNCHECKED_CAST")
-            emit(NetworkBoundResource.Success(value as Cache))
-        }
-
-        var lastError: String? = null
-
-        // Initial fetch — RetryInterceptor handles transient failures automatically
-        try {
-            val remote = fetch()
-            save(remote)
-            cache().take(1).collect { value ->
-                lastCached = value
-                @Suppress("UNCHECKED_CAST")
-                emit(NetworkBoundResource.Success(value as Cache))
-            }
-            lastError = null
-        } catch (e: Exception) {
-            lastError = e.localizedMessage ?: "Network error"
-            @Suppress("UNCHECKED_CAST")
-            lastCached?.let { emit(NetworkBoundResource.Stale(it as Cache, lastError = lastError)) }
-                ?: emit(NetworkBoundResource.Error(lastError))
+        launch {
+            cache().collect { value -> send(value) }
         }
 
         // Automatic polling loop — continues until the flow is cancelled (ViewModel cleared)
         while (true) {
-            delay(pollIntervalMillis.milliseconds)
             try {
                 val remote = fetch()
                 save(remote)
-                cache().take(1).collect { value ->
-                    lastCached = value
-                    @Suppress("UNCHECKED_CAST")
-                    emit(NetworkBoundResource.Success(value as Cache))
-                }
-                lastError = null
             } catch (e: Exception) {
-                lastError = e.localizedMessage ?: "Polling failed"
-                @Suppress("UNCHECKED_CAST")
-                lastCached?.let { emit(NetworkBoundResource.Stale(it as Cache, lastError = lastError)) }
+                e.message?.let { Log.e("NBRPoll", it) } //Do not care about errors here, just log them
             }
+            delay(pollIntervalMillis.milliseconds)
         }
     }
 }

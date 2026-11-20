@@ -4,9 +4,11 @@ import com.example.splitshare.data.AuthRequest
 import com.example.splitshare.data.RegisterRequest
 import com.example.splitshare.domain.model.Expense
 import com.example.splitshare.domain.model.Group
+import com.example.splitshare.domain.model.GroupInfo
 import com.example.splitshare.domain.model.Participant
 import com.example.splitshare.domain.model.Person
 import com.example.splitshare.domain.model.PersonRef
+import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -19,21 +21,15 @@ interface NetworkAPI {
 
     // ── AUTH ──────────────────────────────────────────────────────────────
     @POST("login")
-    suspend fun auth(@Body authReq: AuthRequest) : Person
+    suspend fun auth(@Body authReq: AuthRequest) : Response<Person>
 
     @POST("register")
-    suspend fun register(@Body registerReq: RegisterRequest) : Person
+    suspend fun register(@Body registerReq: RegisterRequest) : Response<Person>
 
     // ── People (directory) ────────────────────────────────────────────────
 
-    @GET("people")
-    suspend fun fetchAllPeople(): Array<Person>
-
     @GET("people/{id}")
     suspend fun fetchPerson(@Path("id") id: String): Person
-
-    @POST("people")
-    suspend fun createPerson(@Body person: Person, @Query("request_id") requestId: String): Person
 
     @PUT("people/{id}")
     suspend fun updatePerson(@Path("id") id: String, @Body person: Person, @Query("request_id") requestId: String): Person
@@ -41,16 +37,16 @@ interface NetworkAPI {
     @DELETE("people/{id}")
     suspend fun deletePerson(@Path("id") id: String, @Query("request_id") requestId: String)
 
-    // ── Groups ────────────────────────────────────────────────────────────
+    @GET("people/{id}/groups")
+    suspend fun fetchUserGroups(@Path("id") id: String): List<GroupInfo>
 
-    @GET("groups")
-    suspend fun fetchAllGroups(): Array<Group>
+    // ── Groups ────────────────────────────────────────────────────────────
 
     @GET("groups/{id}")
     suspend fun fetchGroup(@Path("id") id: String): Group
 
     @POST("groups")
-    suspend fun createGroup(@Body group: Group, @Query("request_id") requestId: String): Group
+    suspend fun createGroup(@Body request: GroupCreateRequest, @Query("request_id") requestId: String): Response<GroupInfo>
 
     @PUT("groups/{id}")
     suspend fun updateGroup(@Path("id") id: String, @Body group: Group, @Query("request_id") requestId: String): Group

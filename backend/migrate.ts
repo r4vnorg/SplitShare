@@ -35,12 +35,12 @@ const migratePeople = () => {
 
 const migrateGroups = () => {
     dropIfExists('groups')
-    createTable('groups', 'id TEXT PRIMARY KEY, name TEXT NOT NULL, description TEXT NOT NULL, createdAt INTEGER NOT NULL')
+    createTable('groups', 'id TEXT PRIMARY KEY, name TEXT NOT NULL, description TEXT, createdAt INTEGER NOT NULL')
 }
 
 const migrateParticipants = () => {
     dropIfExists('participants')
-    createTable('participants', 'groupId TEXT NOT NULL, personId TEXT NOT NULL, person TEXT NOT NULL, isActive INTEGER NOT NULL DEFAULT 1, PRIMARY KEY (groupId, personId)')
+    createTable('participants', 'groupId TEXT NOT NULL, personId TEXT NOT NULL, isActive INTEGER NOT NULL DEFAULT 1, addedAt INTEGER NOT NULL, PRIMARY KEY (groupId, personId)')
 }
 
 const migrateExpenses = () => {

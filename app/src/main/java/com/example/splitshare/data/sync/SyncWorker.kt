@@ -5,7 +5,12 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.example.splitshare.data.ExpenseRepository
 import com.example.splitshare.data.GroupRepository
+import com.example.splitshare.data.local.GroupParticipantDao
+import com.example.splitshare.data.local.toEntity
+import com.example.splitshare.domain.model.Group
+import com.example.splitshare.domain.model.GroupInfo
 import com.example.splitshare.domain.model.SyncStatus
+import com.example.splitshare.network.NetworkStatus
 
 /**
  * Sends every locally-queued (PENDING) write through [syncService]. Only ever processes PENDING
@@ -25,15 +30,16 @@ class SyncWorker(
     override suspend fun doWork(): Result {
         var anyStillPending = false
 
-        groupRepository.getPendingGroups().forEach { group ->
-            val success = runCatching { syncService.syncGroup(group) }.getOrDefault(false)
-            when {
-                success -> {
-                    groupRepository.setGroupSyncStatus(group.id, SyncStatus.SYNCED)
+        groupRepository.getPendingCreatedGroups().forEach { group ->
+            when (val res = syncService.createGroup(group)) {
+                is NetworkStatus.Success<GroupInfo> -> {
+                    groupRepository.replaceTemporaryGroup(group, res.data)
                     syncNotifier.notifySynced("Group synced", "“${group.name}” is now synced.")
                 }
-                runAttemptCount >= MAX_ATTEMPTS -> groupRepository.setGroupSyncStatus(group.id, SyncStatus.FAILED)
-                else -> anyStillPending = true
+                is NetworkStatus.Error ->
+                    groupRepository.setGroupSyncStatus(group.id, SyncStatus.FAILED)
+                is NetworkStatus.Pending ->
+                    anyStillPending = true
             }
         }
 

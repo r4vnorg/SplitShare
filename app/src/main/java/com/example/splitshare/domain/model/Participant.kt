@@ -6,6 +6,14 @@ data class Participant(
     val isActive: Boolean,
 )
 
+data class ParticipantEntity(
+    val groupId: String,
+    val personId: String,
+    val addedAt: Long,
+    val removedAt: Long? = null,
+    val syncStatus: SyncStatus = SyncStatus.PENDING,
+)
+
 /** A participant add/remove change still queued for background sync (worker-only). */
 data class PendingParticipantChange(
     val groupId: String,
