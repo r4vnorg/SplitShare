@@ -1,5 +1,7 @@
 package com.example.splitshare.data.local
 
+import com.example.splitshare.data.local.entity.ExpenseEntity
+import com.example.splitshare.data.local.entity.ExpenseSplitEntity
 import com.example.splitshare.data.local.entity.ExpenseWithSplits
 import com.example.splitshare.data.local.entity.GroupEntity
 import com.example.splitshare.data.local.entity.GroupEntityWithParticipants
@@ -14,6 +16,7 @@ import com.example.splitshare.domain.model.ParticipantWithPerson
 import com.example.splitshare.domain.model.Participant
 import com.example.splitshare.domain.model.Person
 import com.example.splitshare.domain.model.SyncStatus
+import kotlin.String
 
 fun PersonEntity.toDomain(): Person = Person(id = id, name = name, email = email, phone = phone)
 
@@ -96,4 +99,30 @@ fun Participant.toEntity(syncStatus: SyncStatus) : GroupParticipantEntity = Grou
     addedAt = addedAt,
     removedAt = removedAt,
     syncStatus = syncStatus
+)
+
+fun Expense.toEntity() : ExpenseEntity = ExpenseEntity(
+    id = id,
+    groupId = groupId,
+    description = description,
+    amountMinor = amountMinor,
+    payerId = payerId,
+    createdAt = createdAt,
+    syncStatus = syncStatus
+)
+
+fun Expense.toEntity(syncStatus: SyncStatus) : ExpenseEntity = ExpenseEntity(
+    id = id,
+    groupId = groupId,
+    description = description,
+    amountMinor = amountMinor,
+    payerId = payerId,
+    createdAt = createdAt,
+    syncStatus = syncStatus
+)
+
+fun ExpenseSplit.toEntity(expenseId: String) : ExpenseSplitEntity = ExpenseSplitEntity(
+    expenseId = expenseId,
+    personId = personId,
+    shareMinor = shareMinor
 )

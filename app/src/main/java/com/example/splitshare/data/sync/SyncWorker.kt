@@ -8,6 +8,7 @@ import com.example.splitshare.data.ExpenseRepository
 import com.example.splitshare.data.GroupRepository
 import com.example.splitshare.data.local.GroupParticipantDao
 import com.example.splitshare.data.local.toEntity
+import com.example.splitshare.domain.model.Expense
 import com.example.splitshare.domain.model.Group
 import com.example.splitshare.domain.model.GroupInfo
 import com.example.splitshare.domain.model.ParticipantWithPerson
@@ -53,7 +54,7 @@ class SyncWorker(
             when (res) {
                 is NetworkStatus.Success<ParticipantWithPerson> -> {
                     groupRepository.updateTemporaryParticipant(change.participant, res.data)
-                    //syncNotifier.notifySynced("Group synced", "“${group.name}” is now synced.")
+                    syncNotifier.notifySynced("Group synced", "“${change.person.email}” is now synced.")
                 }
                 is NetworkStatus.Error ->
                     groupRepository.setParticipantSyncStatus(change.participant, SyncStatus.FAILED)
@@ -63,14 +64,16 @@ class SyncWorker(
         }
 
         expenseRepository.getPendingExpenses().forEach { expense ->
-            val success = runCatching { syncService.syncExpense(expense) }.getOrDefault(false)
-            when {
-                success -> {
+            Log.e("TEST", expense.id)
+            when (val res = syncService.syncExpense(expense)) {
+                is NetworkStatus.Success<Expense> -> {
                     expenseRepository.setExpenseSyncStatus(expense.id, SyncStatus.SYNCED)
                     syncNotifier.notifySynced("Expense synced", "“${expense.description}” is now synced.")
                 }
-                runAttemptCount >= MAX_ATTEMPTS -> expenseRepository.setExpenseSyncStatus(expense.id, SyncStatus.FAILED)
-                else -> anyStillPending = true
+                is NetworkStatus.Error ->
+                    expenseRepository.setExpenseSyncStatus(expense.id, SyncStatus.FAILED)
+                is NetworkStatus.Pending ->
+                    anyStillPending = true
             }
         }
 

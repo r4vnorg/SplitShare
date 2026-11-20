@@ -13,13 +13,7 @@ interface GroupRepository {
 
     fun observeGroups(): Flow<List<GroupInfo>>
 
-    fun observeGroup(groupId: String): Flow<Group?>
-
-
-    fun observeDetailData(
-        groupId: String,
-        pollIntervalMillis: Long = 30_000,
-    ): Flow<GroupDetailData>
+    fun observeDetailData(groupId: String): Flow<GroupDetailData>
 
     /** Active (non-removed) participants only. */
     fun observeParticipants(groupId: String): Flow<List<ParticipantWithPerson>>

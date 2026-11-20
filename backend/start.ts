@@ -234,17 +234,51 @@ app.get('/groups', (req, res) => {
 app.get('/groups/:id', (req, res) => {
     console.log(req.method, req.url)
 
-    let query;
+    let group;
     try {
-        query = db.prepare(`SELECT * FROM groups WHERE id = ?`).get(req.params.id)
+        group = db.prepare(`SELECT * FROM groups WHERE id = ?`).get(req.params.id)
     } catch (err) {
         return sendDbError(res, err, 500, `Failed to fetch group ${req.params.id}`);
     }
 
-    if (typeof query === 'undefined')
+    if (typeof group === 'undefined')
         res.status(404).send(`Group with id ${req.params.id} not found`)
 
-    res.status(200).send(query)
+    const participants = db.prepare(`
+        SELECT p.groupId, p.personId, p.isActive, p.addedAt,
+               pe.id, pe.name, pe.email, pe.phone
+        FROM participants p
+        JOIN people pe ON pe.id = p.personId
+        WHERE p.groupId = ?
+    `).all(req.params.id)
+
+    const expenses = db.prepare(`SELECT * FROM expenses WHERE groupId = ?`).all(req.params.id)
+
+    const result = {
+        group: { id: group!.id, name: group!.name, description: group!.description, createdAt: group!.createdAt },
+        participants: (participants as any[]).map((p: any) => ({
+            participant: {
+                groupId: p.groupId,
+                personId: p.personId,
+                addedAt: p.addedAt,
+                removedAt: null,
+                syncStatus: 'SYNCED',
+            },
+            person: { id: p.id, name: p.name, email: p.email, phone: p.phone },
+        })),
+        expenses: (expenses as any[]).map((e: any) => ({
+            id: e.id,
+            groupId: e.groupId,
+            description: e.description,
+            amountMinor: e.amountMinor,
+            payerId: e.payerId,
+            createdAt: e.createdAt,
+            syncStatus: e.syncStatus,
+            splits: JSON.parse(e.splits),
+        })),
+    }
+
+    res.status(200).send(result)
 })
 
 app.post('/groups', (req, res) => {
@@ -383,13 +417,22 @@ app.delete('/groups/:groupId/participants/:personId', (req, res) => {
 app.get('/groups/:groupId/expenses', (req, res) => {
     console.log( req.method, req.url)
 
-    let query;
     try {
-        query = db.prepare(`SELECT * FROM expenses WHERE groupId = ?`).all(req.params.groupId)
+        const expenses = db.prepare(`SELECT * FROM expenses WHERE groupId = ?`).all(req.params.groupId)
+        const result = (expenses as any[]).map((e: any) => ({
+            id: e.id,
+            groupId: e.groupId,
+            description: e.description,
+            amountMinor: e.amountMinor,
+            payerId: e.payerId,
+            createdAt: e.createdAt,
+            syncStatus: e.syncStatus,
+            splits: JSON.parse(e.splits),
+        }))
+        res.status(200).send(result)
     } catch (err) {
         return sendDbError(res, err, 500, `Failed to fetch expenses for group ${req.params.groupId}`);
     }
-    res.status(200).send(query)
 })
 
 app.get('/expenses/:id', (req, res) => {
@@ -403,9 +446,18 @@ app.get('/expenses/:id', (req, res) => {
     }
 
     if (typeof query === 'undefined')
-        res.status(404).send(`Expense with id ${req.params.id} not found`)
+        return res.status(404).send(`Expense with id ${req.params.id} not found`)
 
-    res.status(200).send(query)
+    res.status(200).send({
+        id: query.id,
+        groupId: query.groupId,
+        description: query.description,
+        amountMinor: query.amountMinor,
+        payerId: query.payerId,
+        createdAt: query.createdAt,
+        syncStatus: query.syncStatus,
+        //splits: JSON.parse(query.splits),
+    })
 })
 
 app.post('/expenses', (req, res) => {

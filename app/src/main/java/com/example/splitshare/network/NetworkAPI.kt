@@ -4,6 +4,7 @@ import com.example.splitshare.data.AuthRequest
 import com.example.splitshare.data.RegisterRequest
 import com.example.splitshare.domain.model.Expense
 import com.example.splitshare.domain.model.Group
+import com.example.splitshare.domain.model.GroupDetailData
 import com.example.splitshare.domain.model.GroupInfo
 import com.example.splitshare.domain.model.ParticipantWithPerson
 import com.example.splitshare.domain.model.Person
@@ -42,8 +43,7 @@ interface NetworkAPI {
     // ── Groups ────────────────────────────────────────────────────────────
 
     @GET("groups/{id}")
-    suspend fun fetchGroup(@Path("id") id: String): Group
-
+    suspend fun fetchGroup(@Path("id") id: String): GroupDetailData
     @POST("groups")
     suspend fun createGroup(@Body request: GroupCreateRequest, @Query("request_id") requestId: String): Response<GroupInfo>
 
@@ -67,13 +67,13 @@ interface NetworkAPI {
     // ── Expenses ──────────────────────────────────────────────────────────
 
     @GET("groups/{groupId}/expenses")
-    suspend fun fetchExpenses(@Path("groupId") groupId: String): Array<Expense>
+    suspend fun fetchExpenses(@Path("groupId") groupId: String): List<Expense>
 
     @GET("expenses/{id}")
     suspend fun fetchExpense(@Path("id") id: String): Expense
 
     @POST("expenses")
-    suspend fun createExpense(@Body expense: Expense, @Query("request_id") requestId: String): Expense
+    suspend fun createExpense(@Body expense: Expense, @Query("request_id") requestId: String): Response<Expense>
 
     @PUT("expenses/{id}")
     suspend fun updateExpense(@Path("id") id: String, @Body expense: Expense, @Query("request_id") requestId: String): Expense

@@ -16,7 +16,7 @@ interface SyncService {
     suspend fun createGroup(group: Group): NetworkStatus<GroupInfo>
 
     suspend fun addParticipant(groupId: String, email: String): NetworkStatus<ParticipantWithPerson>
-    suspend fun syncExpense(expense: Expense): Boolean
+    suspend fun syncExpense(expense: Expense): NetworkStatus<Expense>
 
     /** US12: delivers a payment reminder to [toPersonId]. */
     suspend fun sendReminder(groupId: String, toPersonId: String, amountMinor: Long): Boolean

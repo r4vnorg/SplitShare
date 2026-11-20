@@ -51,7 +51,8 @@ class AppContainer(context: Context) {
         personDao = database.personDao(),
         syncScheduler = syncScheduler,
         networkClient = networkClient,
-        personRepository = personRepository
+        personRepository = personRepository,
+        expenseSplitDao = database.expenseSplitDao()
     )
 
     val expenseRepository: ExpenseRepository = RoomExpenseRepository(

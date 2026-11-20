@@ -66,10 +66,22 @@ class NetworkSyncService(
         return NetworkStatus.Pending(0)
     }
 
-    override suspend fun syncExpense(expense: Expense): Boolean = runCatching {
-        //api.createExpense(expense, UUID.randomUUID().toString())
-        true
-    }.getOrDefault(false)
+    override suspend fun syncExpense(expense: Expense): NetworkStatus<Expense> {
+        try {
+            val res = networkClient.api.createExpense(
+                expense = expense,
+                requestId = ObjectHasher.sha256(expense)
+            )
+
+            if (res.isSuccessful)
+                return NetworkStatus.Success(res.body()!!)
+            else if (res.code() in 400..499)
+                return NetworkStatus.Error("TODO: Message")
+        } catch(_: Exception) { }
+
+        return NetworkStatus.Pending(0)
+
+    }
 
     override suspend fun sendReminder(groupId: String, toPersonId: String, amountMinor: Long): Boolean = runCatching {
         //api.sendReminder(
