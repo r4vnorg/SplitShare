@@ -4,14 +4,14 @@ import com.example.splitshare.data.local.entity.ExpenseWithSplits
 import com.example.splitshare.data.local.entity.GroupEntity
 import com.example.splitshare.data.local.entity.GroupEntityWithParticipants
 import com.example.splitshare.data.local.entity.GroupParticipantEntity
-import com.example.splitshare.data.local.entity.ParticipantWithPerson
+import com.example.splitshare.data.local.entity.ParticipantWithPersonEntity
 import com.example.splitshare.data.local.entity.PersonEntity
 import com.example.splitshare.domain.model.Expense
 import com.example.splitshare.domain.model.ExpenseSplit
 import com.example.splitshare.domain.model.Group
 import com.example.splitshare.domain.model.GroupInfo
+import com.example.splitshare.domain.model.ParticipantWithPerson
 import com.example.splitshare.domain.model.Participant
-import com.example.splitshare.domain.model.ParticipantEntity
 import com.example.splitshare.domain.model.Person
 import com.example.splitshare.domain.model.SyncStatus
 
@@ -32,11 +32,14 @@ fun GroupEntityWithParticipants.toDomain(): GroupInfo =
     )
 
 
-fun ParticipantWithPerson.toDomain(): Participant =
-    Participant(person = person.toDomain(), isActive = participant.removedAt == null)
+fun ParticipantWithPersonEntity.toDomain(): ParticipantWithPerson =
+    ParticipantWithPerson(
+        participant = participant.toDomain(),
+        person = person.toDomain()
+    )
 
-fun GroupParticipantEntity.toDomain(): ParticipantEntity =
-    ParticipantEntity(
+fun GroupParticipantEntity.toDomain(): Participant =
+    Participant(
         groupId = groupId,
         personId = personId,
         addedAt = addedAt,
@@ -79,10 +82,18 @@ fun Group.toEntity(syncStatus: SyncStatus): GroupEntity = GroupEntity(
     syncStatus = syncStatus
 )
 
-fun ParticipantEntity.toEntity() : GroupParticipantEntity = GroupParticipantEntity(
+fun Participant.toEntity() : GroupParticipantEntity = GroupParticipantEntity(
     groupId = groupId,
     personId = personId,
     addedAt = addedAt,
     removedAt = removedAt,
-    syncStatus = SyncStatus.PENDING
+    syncStatus = syncStatus
+)
+
+fun Participant.toEntity(syncStatus: SyncStatus) : GroupParticipantEntity = GroupParticipantEntity(
+    groupId = groupId,
+    personId = personId,
+    addedAt = addedAt,
+    removedAt = removedAt,
+    syncStatus = syncStatus
 )

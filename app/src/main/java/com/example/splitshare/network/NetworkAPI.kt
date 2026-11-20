@@ -5,9 +5,8 @@ import com.example.splitshare.data.RegisterRequest
 import com.example.splitshare.domain.model.Expense
 import com.example.splitshare.domain.model.Group
 import com.example.splitshare.domain.model.GroupInfo
-import com.example.splitshare.domain.model.Participant
+import com.example.splitshare.domain.model.ParticipantWithPerson
 import com.example.splitshare.domain.model.Person
-import com.example.splitshare.domain.model.PersonRef
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -29,7 +28,7 @@ interface NetworkAPI {
     // ── People (directory) ────────────────────────────────────────────────
 
     @GET("people/{id}")
-    suspend fun fetchPerson(@Path("id") id: String): Person
+    suspend fun fetchPerson(@Path("id") id: String): Response<Person>
 
     @PUT("people/{id}")
     suspend fun updatePerson(@Path("id") id: String, @Body person: Person, @Query("request_id") requestId: String): Person
@@ -57,10 +56,10 @@ interface NetworkAPI {
     // ── Participants ──────────────────────────────────────────────────────
 
     @GET("groups/{groupId}/participants")
-    suspend fun fetchParticipants(@Path("groupId") groupId: String): Array<Participant>
+    suspend fun fetchParticipants(@Path("groupId") groupId: String): List<ParticipantWithPerson>
 
     @POST("groups/{groupId}/participants")
-    suspend fun addParticipant(@Path("groupId") groupId: String, @Body person: Person, @Query("request_id") requestId: String): Participant
+    suspend fun addParticipant(@Path("groupId") groupId: String, @Body request: AddParticipantRequest, @Query("request_id") requestId: String): Response<ParticipantWithPerson>
 
     @DELETE("groups/{groupId}/participants/{personId}")
     suspend fun removeParticipant(@Path("groupId") groupId: String, @Path("personId") personId: String, @Query("request_id") requestId: String)

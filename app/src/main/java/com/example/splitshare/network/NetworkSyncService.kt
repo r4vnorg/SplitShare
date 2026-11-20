@@ -5,10 +5,12 @@ import com.example.splitshare.data.sync.SyncService
 import com.example.splitshare.domain.model.Expense
 import com.example.splitshare.domain.model.Group
 import com.example.splitshare.domain.model.GroupInfo
+import com.example.splitshare.domain.model.ParticipantWithPerson
 import com.example.splitshare.domain.model.Person
 import java.util.UUID
 
 data class GroupCreateRequest (val name: String, val description: String?, val creatorID: String)
+data class AddParticipantRequest(val email: String, val groupId: String, val creatorID: String) //Some fields are redundant but add entropy to hashing
 
 class NetworkSyncService(
     private val authProvider: AuthProvider,
@@ -39,16 +41,30 @@ class NetworkSyncService(
         return NetworkStatus.Pending(0)
     }
 
-    override suspend fun syncParticipant(groupId: String, personId: String, removed: Boolean): Boolean = runCatching {
-        if (removed) {
-            //api.removeParticipant(groupId, personId, UUID.randomUUID().toString())
-        } else {
-            // Adding a participant requires a Person payload; the person must already exist
-            // in the directory. We use a minimal Person object — the backend uses the ID.
-            //api.addParticipant(groupId, Person(personId, "", "", ""), UUID.randomUUID().toString())
-        }
-        true
-    }.getOrDefault(false)
+    override suspend fun addParticipant(groupId: String, email: String): NetworkStatus<ParticipantWithPerson> {
+
+        val userID = authProvider.getUser()!!
+        val addRequest = AddParticipantRequest(
+            email = email,
+            groupId = groupId,
+            creatorID = userID.id
+        )
+
+        try {
+            val res = networkClient.api.addParticipant(
+                groupId = groupId,
+                request = addRequest,
+                requestId = ObjectHasher.sha256(addRequest)
+            )
+
+            if (res.isSuccessful)
+                return NetworkStatus.Success(res.body()!!)
+            else if (res.code() in 400..499)
+                return NetworkStatus.Error("TODO: Message")
+        } catch(_: Exception) { }
+
+        return NetworkStatus.Pending(0)
+    }
 
     override suspend fun syncExpense(expense: Expense): Boolean = runCatching {
         //api.createExpense(expense, UUID.randomUUID().toString())

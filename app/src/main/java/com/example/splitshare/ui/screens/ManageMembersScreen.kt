@@ -1,5 +1,6 @@
 package com.example.splitshare.ui.screens
 
+import android.widget.Spinner
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -29,6 +30,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.splitshare.domain.model.SyncStatus
 import com.example.splitshare.viewmodel.AppViewModelProvider
 import com.example.splitshare.viewmodel.ManageMembersViewModel
 
@@ -70,10 +72,19 @@ fun ManageMembersScreen(
                 items(uiState.members, key = { it.personId }) { member ->
                     ListItem(
                         headlineContent = { Text(member.name) },
-                        supportingContent = { Text(member.email) },
+                        supportingContent = {
+                            when(member.syncStatus) {
+                                SyncStatus.SYNCED -> Text(member.email)
+                                SyncStatus.FAILED -> Text("SYNC FAILED")
+                                else -> Text("Syncing")
+                            } },
                         trailingContent = {
-                            IconButton(onClick = { viewModel.removeParticipant(member.personId) }) {
-                                Icon(Icons.Default.Delete, contentDescription = "Remove ${member.name}")
+                            when(member.syncStatus) {
+                                SyncStatus.SYNCED ->
+                                    IconButton(onClick = { viewModel.removeParticipant(member.personId) }) {
+                                        Icon(Icons.Default.Delete, contentDescription = "Remove ${member.name}")
+                                    }
+                                else -> null
                             }
                         },
                     )
@@ -84,15 +95,6 @@ fun ManageMembersScreen(
             Text(text = "Add participant", style = MaterialTheme.typography.titleMedium)
 
             OutlinedTextField(
-                value = uiState.newPersonName,
-                onValueChange = viewModel::onNewPersonNameChange,
-                label = { Text("Name") },
-                isError = uiState.nameError != null,
-                supportingText = uiState.nameError?.let { error -> @Composable { Text(error) } },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            OutlinedTextField(
                 value = uiState.newPersonEmail,
                 onValueChange = viewModel::onNewPersonEmailChange,
                 label = { Text("Email") },
@@ -100,16 +102,6 @@ fun ManageMembersScreen(
                 supportingText = uiState.emailError?.let { error -> @Composable { Text(error) } },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                modifier = Modifier.fillMaxWidth(),
-            )
-            OutlinedTextField(
-                value = uiState.newPersonPhone,
-                onValueChange = viewModel::onNewPersonPhoneChange,
-                label = { Text("Phone (optional)") },
-                isError = uiState.phoneError != null,
-                supportingText = uiState.phoneError?.let { error -> @Composable { Text(error) } },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                 modifier = Modifier.fillMaxWidth(),
             )
             Button(onClick = viewModel::addParticipant, modifier = Modifier.fillMaxWidth()) {

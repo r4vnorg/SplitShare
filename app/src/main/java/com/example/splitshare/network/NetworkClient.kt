@@ -1,16 +1,9 @@
 package com.example.splitshare.network
 
 import android.util.Log
-import com.example.splitshare.data.local.toDomain
-import com.example.splitshare.data.local.toEntity
-import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
-import kotlinx.coroutines.flow.emitAll
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -18,7 +11,6 @@ import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.UUID
-import java.util.concurrent.TimeUnit
 import kotlin.Unit
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -65,12 +57,12 @@ class NetworkClient(
      */
     suspend inline fun <T> networkBoundEntity(
         crossinline cache: suspend () -> T?,
-        crossinline fetch: suspend () -> T,
+        crossinline fetch: suspend () -> Response<T>,
         crossinline save: suspend (T) -> Unit,
     ): T? {
          cache()?.let { return it }
          try {
-             val entity = fetch()
+             val entity = executeRequest({ id -> fetch() })
              save(entity)
              return null
          } catch (e: Exception) {

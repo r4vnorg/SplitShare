@@ -41,8 +41,8 @@ class GroupDaoTest {
     @Test
     fun participantCountExcludesRemovedParticipants() = runBlocking {
         db.groupDao().insert(GroupEntity(id = "g1", name = "Cabin trip", description = "", createdAt = 1L))
-        db.personDao().insert(PersonEntity(id = "p1", name = "Alice", email = "alice@example.com", phone = ""))
-        db.personDao().insert(PersonEntity(id = "p2", name = "Bob", email = "bob@example.com", phone = ""))
+        db.personDao().upsert(PersonEntity(id = "p1", name = "Alice", email = "alice@example.com", phone = ""))
+        db.personDao().upsert(PersonEntity(id = "p2", name = "Bob", email = "bob@example.com", phone = ""))
         db.groupParticipantDao().upsert(GroupParticipantEntity(groupId = "g1", personId = "p1", addedAt = 1L))
         db.groupParticipantDao().upsert(
             GroupParticipantEntity(groupId = "g1", personId = "p2", addedAt = 1L, removedAt = 2L)

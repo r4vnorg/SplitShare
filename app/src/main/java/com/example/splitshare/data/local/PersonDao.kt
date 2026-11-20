@@ -20,5 +20,8 @@ interface PersonDao {
     suspend fun findById(id: String) : PersonEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(person: PersonEntity)
+    suspend fun upsert(person: PersonEntity)
+
+    @Query("DELETE FROM people")
+    suspend fun flushCache()
 }

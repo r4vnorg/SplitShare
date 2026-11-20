@@ -41,8 +41,8 @@ interface GroupDao {
             syncStatus = :syncStatus
         WHERE id = :templateId
     """)
-    suspend fun replaceTemplate(templateId: String, newId: String, newName: String, newDescription: String,
-                                createdAt: Long, syncStatus: SyncStatus)
+    suspend fun replaceTemporary(templateId: String, newId: String, newName: String, newDescription: String,
+                                 createdAt: Long, syncStatus: SyncStatus)
 
     @Query("DELETE FROM groups WHERE id = :groupId")
     suspend fun deleteGroup(groupId: String)

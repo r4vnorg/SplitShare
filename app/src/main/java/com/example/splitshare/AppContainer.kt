@@ -48,9 +48,10 @@ class AppContainer(context: Context) {
         groupDao = database.groupDao(),
         groupParticipantDao = database.groupParticipantDao(),
         expenseDao = database.expenseDao(),
-        personRepository = personRepository,
+        personDao = database.personDao(),
         syncScheduler = syncScheduler,
         networkClient = networkClient,
+        personRepository = personRepository
     )
 
     val expenseRepository: ExpenseRepository = RoomExpenseRepository(
@@ -66,5 +67,6 @@ class AppContainer(context: Context) {
         database.expenseDao().flushCache()
         database.userAuthDao().flushCache()
         database.groupDao().flushCache()
+        database.personDao().flushCache()
     }
 }

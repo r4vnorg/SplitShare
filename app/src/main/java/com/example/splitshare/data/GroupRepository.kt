@@ -1,15 +1,12 @@
 package com.example.splitshare.data
 
-import com.example.splitshare.data.local.entity.GroupEntity
-import com.example.splitshare.domain.model.Expense
 import com.example.splitshare.domain.model.Group
 import com.example.splitshare.domain.model.GroupDetailData
 import com.example.splitshare.domain.model.GroupInfo
 import com.example.splitshare.domain.model.Participant
-import com.example.splitshare.domain.model.PendingParticipantChange
+import com.example.splitshare.domain.model.ParticipantWithPerson
 import com.example.splitshare.domain.model.Person
 import com.example.splitshare.domain.model.SyncStatus
-import com.example.splitshare.network.NetworkStatus
 import kotlinx.coroutines.flow.Flow
 
 interface GroupRepository {
@@ -25,13 +22,13 @@ interface GroupRepository {
     ): Flow<GroupDetailData>
 
     /** Active (non-removed) participants only. */
-    fun observeParticipants(groupId: String): Flow<List<Participant>>
+    fun observeParticipants(groupId: String): Flow<List<ParticipantWithPerson>>
 
     /** Creates the group and auto-adds the device owner (from their Profile) as the first participant. */
     suspend fun createGroup(name: String, description: String)
 
     /** Adds [person] to the group, or reactivates them if they were previously removed. */
-    suspend fun addParticipant(groupId: String, person: Person)
+    suspend fun addParticipant(groupId: String, email: String)
 
     /**
      * Soft-deletes the participant. The caller must already have verified their balance is zero
@@ -41,10 +38,13 @@ interface GroupRepository {
 
     // Worker-only: background sync plumbing.
     suspend fun getPendingCreatedGroups(): List<Group>
+    suspend fun getPendingParticipantAdditions(): List<ParticipantWithPerson>
+
 
     suspend fun replaceTemporaryGroup(old: Group, new: GroupInfo)
+    suspend fun updateTemporaryParticipant(old: Participant, new: ParticipantWithPerson)
 
-    suspend fun setGroupSyncStatus(groupId: String, status: SyncStatus)
-    suspend fun getPendingParticipantChanges(): List<PendingParticipantChange>
-    suspend fun setParticipantSyncStatus(groupId: String, personId: String, status: SyncStatus)
+
+    suspend fun setGroupSyncStatus(group: Group, status: SyncStatus)
+    suspend fun setParticipantSyncStatus(participant: Participant, status: SyncStatus)
 }

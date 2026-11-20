@@ -1,9 +1,9 @@
 package com.example.splitshare.data
 
-import android.util.Log
 import com.example.splitshare.data.local.ExpenseDao
 import com.example.splitshare.data.local.GroupDao
 import com.example.splitshare.data.local.GroupParticipantDao
+import com.example.splitshare.data.local.PersonDao
 import com.example.splitshare.data.local.entity.GroupEntity
 import com.example.splitshare.data.local.entity.GroupParticipantEntity
 import com.example.splitshare.data.local.toDomain
@@ -13,7 +13,7 @@ import com.example.splitshare.domain.model.Group
 import com.example.splitshare.domain.model.GroupDetailData
 import com.example.splitshare.domain.model.GroupInfo
 import com.example.splitshare.domain.model.Participant
-import com.example.splitshare.domain.model.PendingParticipantChange
+import com.example.splitshare.domain.model.ParticipantWithPerson
 import com.example.splitshare.domain.model.Person
 import com.example.splitshare.domain.model.SyncStatus
 import com.example.splitshare.network.NetworkClient
@@ -29,15 +29,14 @@ class RoomGroupRepository(
     private val groupDao: GroupDao,
     private val groupParticipantDao: GroupParticipantDao,
     private val expenseDao: ExpenseDao,
+    private val personDao: PersonDao,
     private val personRepository: PersonRepository,
     private val syncScheduler: SyncScheduler,
     private val networkClient: NetworkClient,
 ) : GroupRepository {
 
     override fun observeGroups(): Flow<List<GroupInfo>> {
-
         val userId = runBlocking { authProvider.getUser()!!.id } //TODO: rewrite with fixed Auth
-
         return networkClient.networkBoundContentWithPolling(
             cache = {
                 groupDao.observeAllWithParticipants()
@@ -45,24 +44,37 @@ class RoomGroupRepository(
             },
             fetch = { networkClient.api.fetchUserGroups(userId) },
             save =  { list -> list.forEach {
-                    Log.e("TEST", it.group.name)
                     groupDao.upsert(it.group.toEntity(SyncStatus.SYNCED))
                     it.participants.forEach {
-                        participant -> groupParticipantDao.upsert(participant.toEntity())
+                        participant ->
+                        personRepository.findById(participant.personId)
+                        groupParticipantDao.upsert(participant.toEntity(SyncStatus.SYNCED))
                     }
                 }
             }
-        );
+        )
     }
 
     override fun observeGroup(groupId: String): Flow<Group?> =
         groupDao.observe(groupId).map { it?.toDomain() }
 
-    override fun observeParticipants(groupId: String): Flow<List<Participant>> =
-        groupParticipantDao.observeActiveWithPerson(groupId).map { rows -> rows.map { it.toDomain() } }
+    override fun observeParticipants(groupId: String): Flow<List<ParticipantWithPerson>>
+        = networkClient.networkBoundContentWithPolling(
+            cache = {
+                groupParticipantDao.observeActiveWithPerson(groupId)
+                    .map { rows -> rows.map { it.toDomain() } }
+            },
+            fetch = { networkClient.api.fetchParticipants(groupId) },
+            save = { list -> list.forEach {
+                    personDao.upsert(it.person.toEntity())
+                    groupParticipantDao.upsert(it.participant.toEntity(SyncStatus.SYNCED))
+                }
+            }
+        )
+
+
 
     override suspend fun createGroup(name: String, description: String) {
-
         /* Just insert, Sync takes care of rest */
         groupDao.insert(GroupEntity(
             id = UUID.randomUUID().toString(),  //Temporary
@@ -75,11 +87,27 @@ class RoomGroupRepository(
         syncScheduler.requestSync()
     }
 
+    override suspend fun addParticipant(groupId: String, email: String) {
 
-    override suspend fun addParticipant(groupId: String, person: Person) {
-        groupParticipantDao.upsert(
-            GroupParticipantEntity(groupId = groupId, personId = person.id, addedAt = System.currentTimeMillis())
-        )
+        /* QOL: Try to find if person is locally cached */
+        var person = personDao.findByEmail(email)
+        if (person == null) {
+            person = Person(
+                id = UUID.randomUUID().toString(),
+                name = email,
+                email = email,
+                phone= ""
+            ).toEntity()
+            personDao.upsert(person)
+        }
+
+        groupParticipantDao.upsert(GroupParticipantEntity(
+            groupId = groupId,
+            personId = person.id,
+            addedAt = 0,
+            syncStatus = SyncStatus.SOFT_CREATE
+        ))
+
         syncScheduler.requestSync()
     }
 
@@ -97,21 +125,37 @@ class RoomGroupRepository(
         groupDao.getByStatus(SyncStatus.SOFT_CREATE).map { it.toDomain() }
 
     override suspend fun replaceTemporaryGroup(old: Group, new: GroupInfo) {
-        groupDao.upsert(new.group.toEntity(SyncStatus.SYNCED))
-        groupDao.deleteGroup(old.id)
+        val entity = new.group.toEntity(SyncStatus.SYNCED)
+        groupDao.replaceTemporary(
+            templateId = old.id,
+            newId = entity.id,
+            newName = entity.name,
+            newDescription = entity.description,
+            createdAt = entity.createdAt,
+            syncStatus = entity.syncStatus)
         new.participants.forEach { groupParticipantDao.upsert(it.toEntity()) }
     }
 
-    override suspend fun setGroupSyncStatus(groupId: String, status: SyncStatus) =
-        groupDao.updateSyncStatus(groupId, status)
+    override suspend fun updateTemporaryParticipant(old: Participant, new: ParticipantWithPerson) {
 
-    override suspend fun getPendingParticipantChanges(): List<PendingParticipantChange> =
-        groupParticipantDao.getByStatus(SyncStatus.PENDING).map {
-            PendingParticipantChange(groupId = it.groupId, personId = it.personId, removed = it.removedAt != null)
+        personDao.upsert(new.person.toEntity()) //Add new person
+        groupParticipantDao.delete(old.groupId, old.personId)
+        groupParticipantDao.upsert(new.participant.toEntity(SyncStatus.SYNCED))
+    }
+
+    override suspend fun getPendingParticipantAdditions(): List<ParticipantWithPerson> =
+        groupParticipantDao.getByStatus(SyncStatus.SOFT_CREATE).map {
+            ParticipantWithPerson(
+                participant = it.toDomain(),
+                person = personDao.findById(it.personId)!!.toDomain()   //This person must exist
+            )
         }
 
-    override suspend fun setParticipantSyncStatus(groupId: String, personId: String, status: SyncStatus) =
-        groupParticipantDao.updateSyncStatus(groupId, personId, status)
+    override suspend fun setGroupSyncStatus(group: Group, status: SyncStatus) =
+        groupDao.updateSyncStatus(group.id, status)
+
+    override suspend fun setParticipantSyncStatus(participant: Participant, status: SyncStatus) =
+        groupParticipantDao.updateSyncStatus(participant.groupId, participant.personId, status)
 
     // ── Network-synced observe ────────────────────────────────────────────
 

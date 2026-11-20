@@ -1,6 +1,7 @@
 package com.example.splitshare.data.sync
 
 import android.content.Context
+import android.util.Log
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.example.splitshare.data.ExpenseRepository
@@ -9,6 +10,7 @@ import com.example.splitshare.data.local.GroupParticipantDao
 import com.example.splitshare.data.local.toEntity
 import com.example.splitshare.domain.model.Group
 import com.example.splitshare.domain.model.GroupInfo
+import com.example.splitshare.domain.model.ParticipantWithPerson
 import com.example.splitshare.domain.model.SyncStatus
 import com.example.splitshare.network.NetworkStatus
 
@@ -37,21 +39,26 @@ class SyncWorker(
                     syncNotifier.notifySynced("Group synced", "“${group.name}” is now synced.")
                 }
                 is NetworkStatus.Error ->
-                    groupRepository.setGroupSyncStatus(group.id, SyncStatus.FAILED)
+                    groupRepository.setGroupSyncStatus(group, SyncStatus.FAILED)
                 is NetworkStatus.Pending ->
                     anyStillPending = true
             }
         }
 
-        groupRepository.getPendingParticipantChanges().forEach { change ->
-            val success = runCatching {
-                syncService.syncParticipant(change.groupId, change.personId, change.removed)
-            }.getOrDefault(false)
-            when {
-                success -> groupRepository.setParticipantSyncStatus(change.groupId, change.personId, SyncStatus.SYNCED)
-                runAttemptCount >= MAX_ATTEMPTS ->
-                    groupRepository.setParticipantSyncStatus(change.groupId, change.personId, SyncStatus.FAILED)
-                else -> anyStillPending = true
+        groupRepository.getPendingParticipantAdditions().forEach { change ->
+            val res = syncService.addParticipant(
+                groupId = change.participant.groupId,
+                email = change.person.email
+            )
+            when (res) {
+                is NetworkStatus.Success<ParticipantWithPerson> -> {
+                    groupRepository.updateTemporaryParticipant(change.participant, res.data)
+                    //syncNotifier.notifySynced("Group synced", "“${group.name}” is now synced.")
+                }
+                is NetworkStatus.Error ->
+                    groupRepository.setParticipantSyncStatus(change.participant, SyncStatus.FAILED)
+                is NetworkStatus.Pending ->
+                    anyStillPending = true
             }
         }
 

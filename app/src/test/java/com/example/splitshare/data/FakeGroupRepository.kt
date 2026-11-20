@@ -2,7 +2,7 @@ package com.example.splitshare.data
 
 import com.example.splitshare.domain.model.Group
 import com.example.splitshare.domain.model.GroupSummary
-import com.example.splitshare.domain.model.Participant
+import com.example.splitshare.domain.model.ParticipantWithPerson
 import com.example.splitshare.domain.model.PendingParticipantChange
 import com.example.splitshare.domain.model.Person
 import com.example.splitshare.domain.model.SyncStatus
@@ -18,13 +18,13 @@ class FakeGroupRepository : GroupRepository {
     val removedParticipants = mutableListOf<Pair<String, String>>()
 
     private val groupsFlow = MutableStateFlow<List<GroupSummary>>(emptyList())
-    private val participantsFlow = MutableStateFlow<List<Participant>>(emptyList())
+    private val participantsFlow = MutableStateFlow<List<ParticipantWithPerson>>(emptyList())
 
     fun emitGroups(groups: List<GroupSummary>) {
         groupsFlow.value = groups
     }
 
-    fun emitParticipants(participants: List<Participant>) {
+    fun emitParticipants(participants: List<ParticipantWithPerson>) {
         participantsFlow.value = participants
     }
 
@@ -32,7 +32,7 @@ class FakeGroupRepository : GroupRepository {
 
     override fun observeGroup(groupId: String): Flow<Group?> = flowOf(null)
 
-    override fun observeParticipants(groupId: String): Flow<List<Participant>> = participantsFlow
+    override fun observeParticipants(groupId: String): Flow<List<ParticipantWithPerson>> = participantsFlow
 
     override suspend fun createGroup(name: String, description: String): Group {
         val group = Group(id = "group-${createdGroups.size}", name = name, description = description, createdAt = 0L)

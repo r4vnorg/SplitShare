@@ -308,30 +308,59 @@ app.delete('/groups/:id', (req, res) => {
 app.get('/groups/:groupId/participants', (req, res) => {
     console.log(req.method, req.url)
 
-    let query;
     try {
-        query = db.prepare(`SELECT * FROM participants WHERE groupId = ?`).all(req.params.groupId)
+        const rows = db.prepare(`
+            SELECT p.groupId, p.personId, p.isActive, p.addedAt, pe.id, pe.name, pe.email, pe.phone
+            FROM participants p
+            JOIN people pe ON pe.id = p.personId
+            WHERE p.groupId = ?
+        `).all(req.params.groupId)
+
+        const result = (rows as any[]).map((r: any) => ({
+            participant: {
+                groupId: r.groupId,
+                personId: r.personId,
+                addedAt: r.addedAt,
+                removedAt: null,
+                syncStatus: 'SYNCED',
+            },
+            person: { id: r.id, name: r.name, email: r.email, phone: r.phone },
+        }))
+
+        res.status(200).send(result)
     } catch (err) {
         return sendDbError(res, err, 500, `Failed to fetch participants for group ${req.params.groupId}`);
     }
-    res.status(200).send(query)
 })
 
 app.post('/groups/:groupId/participants', (req, res) => {
     console.log(req.method, req.url)
 
     withIdempotency(req, res, () => {
-        const { person, isActive } = req.body
+        const { email } = req.body
+        const person = db.prepare(`SELECT * FROM people WHERE email = ?`).get(email)
+        if (typeof person === 'undefined') {
+            return { status: 404, body: `Person with email ${email} not found` }
+        }
         const personId = person.id
         const addedAt = Date.now()
         try {
             db.prepare(`INSERT INTO participants (groupId, personId, isActive, addedAt) VALUES (?, ?, ?, ?)`)
-                .run(req.params.groupId, personId, isActive, addedAt)
+                .run(req.params.groupId, personId, 1, addedAt)
         } catch (err) {
             sendDbError(res, err, 500, `Failed to add participant to group ${req.params.groupId}`);
             return { status: 500, body: null }
         }
-        return { status: 201, body: { groupId: req.params.groupId, personId, person, isActive, addedAt } }
+        return { status: 201, body: {
+            participant: {
+                groupId: req.params.groupId,
+                personId,
+                addedAt,
+                removedAt: null,
+                syncStatus: 'SYNCED',
+            },
+            person: { id: person.id, name: person.name, email: person.email, phone: person.phone },
+        }}
     })
 })
 

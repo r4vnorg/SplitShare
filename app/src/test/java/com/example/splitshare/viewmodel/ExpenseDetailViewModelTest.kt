@@ -5,7 +5,7 @@ import com.example.splitshare.data.FakeExpenseRepository
 import com.example.splitshare.data.FakeGroupRepository
 import com.example.splitshare.domain.model.Expense
 import com.example.splitshare.domain.model.ExpenseSplit
-import com.example.splitshare.domain.model.Participant
+import com.example.splitshare.domain.model.ParticipantWithPerson
 import com.example.splitshare.domain.model.Person
 import com.example.splitshare.domain.model.SyncStatus
 import org.junit.Assert.assertEquals
@@ -50,8 +50,8 @@ class ExpenseDetailViewModelTest {
     fun uiStateResolvesPayerAndSplitNamesFromParticipants() {
         groupRepository.emitParticipants(
             listOf(
-                Participant(Person("p1", "Alice", "a@x.com", ""), true),
-                Participant(Person("p2", "Bob", "b@x.com", ""), true),
+                ParticipantWithPerson(Person("p1", "Alice", "a@x.com", ""), true),
+                ParticipantWithPerson(Person("p2", "Bob", "b@x.com", ""), true),
             )
         )
         expenseRepository.emitExpenses(listOf(expense(SyncStatus.SYNCED)))

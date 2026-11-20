@@ -6,7 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import com.example.splitshare.data.local.entity.GroupParticipantEntity
-import com.example.splitshare.data.local.entity.ParticipantWithPerson
+import com.example.splitshare.data.local.entity.ParticipantWithPersonEntity
 import com.example.splitshare.domain.model.SyncStatus
 import kotlinx.coroutines.flow.Flow
 
@@ -21,7 +21,7 @@ interface GroupParticipantDao {
 
     @Transaction
     @Query("SELECT * FROM group_participants WHERE groupId = :groupId AND removedAt IS NULL")
-    fun observeActiveWithPerson(groupId: String): Flow<List<ParticipantWithPerson>>
+    fun observeActiveWithPerson(groupId: String): Flow<List<ParticipantWithPersonEntity>>
 
     @Query(
         "UPDATE group_participants SET removedAt = :removedAt, syncStatus = :status " +
@@ -36,6 +36,9 @@ interface GroupParticipantDao {
         "UPDATE group_participants SET syncStatus = :status WHERE groupId = :groupId AND personId = :personId"
     )
     suspend fun updateSyncStatus(groupId: String, personId: String, status: SyncStatus)
+
+    @Query("DELETE FROM group_participants WHERE groupId = :groupId AND personId = :personId")
+    suspend fun delete(groupId: String, personId: String)
 
     @Query("DELETE FROM group_participants")
     suspend fun flushCache()
