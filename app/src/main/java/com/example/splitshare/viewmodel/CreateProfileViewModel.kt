@@ -2,15 +2,14 @@ package com.example.splitshare.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.splitshare.data.ProfileRepository
+import com.example.splitshare.data.AuthProvider
 import com.example.splitshare.domain.ProfileValidator
-import com.example.splitshare.domain.model.Profile
+import com.example.splitshare.network.NetworkStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.util.UUID
 
 data class CreateProfileUiState(
     val name: String = "",
@@ -22,7 +21,7 @@ data class CreateProfileUiState(
 )
 
 /** S2 Create profile (US1): name and contact details, stored on the device. */
-class CreateProfileViewModel(private val profileRepository: ProfileRepository) : ViewModel() {
+class CreateProfileViewModel(private val authProvider: AuthProvider) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CreateProfileUiState())
     val uiState: StateFlow<CreateProfileUiState> = _uiState.asStateFlow()
@@ -45,15 +44,18 @@ class CreateProfileViewModel(private val profileRepository: ProfileRepository) :
             return
         }
         viewModelScope.launch {
-            profileRepository.save(
-                Profile(
-                    id = UUID.randomUUID().toString(),
-                    name = state.name.trim(),
-                    email = state.email.trim(),
-                    phone = state.phone.trim(),
-                )
+
+            val result = authProvider.tryCreateAccount(
+                state.name.trim(),
+                state.email.trim(),
+                state.phone.trim()
             )
-            onSaved()
+
+            when (result) {
+                is NetworkStatus.Success<*> -> onSaved()
+                is NetworkStatus.Error -> _uiState.update { it.copy(nameError = result.message) }
+                is NetworkStatus.Pending -> null
+            }
         }
     }
 }

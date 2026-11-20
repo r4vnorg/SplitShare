@@ -10,7 +10,7 @@ import com.example.splitshare.domain.MoneyFormatter
 import com.example.splitshare.domain.MoneyParser
 import com.example.splitshare.domain.SplitCalculator
 import com.example.splitshare.domain.SplitValidator
-import com.example.splitshare.domain.model.Participant
+import com.example.splitshare.domain.model.ParticipantWithPerson
 import com.example.splitshare.ui.navigation.Routes
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -44,7 +44,7 @@ data class SplitMemberRow(
 )
 
 data class AddExpenseUiState(
-    val participants: List<Participant> = emptyList(),
+    val participants: List<ParticipantWithPerson> = emptyList(),
     val payerId: String? = null,
     val amountText: String = "",
     val payerError: String? = null,

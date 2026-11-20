@@ -14,10 +14,14 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
+import com.example.splitshare.data.AuthProvider
 import com.example.splitshare.ui.navigation.AppNavigation
 import com.example.splitshare.ui.theme.SplitShareTheme
+import kotlinx.coroutines.runBlocking
 
-class MainActivity : ComponentActivity() {
+class MainActivity() : ComponentActivity() {
+    private val container by lazy { AppContainer(this) }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -34,6 +38,7 @@ class MainActivity : ComponentActivity() {
                     AppNavigation(
                         navController = rememberNavController(),
                         modifier = Modifier.padding(innerPadding),
+                        hasUser = runBlocking { container.authProvider.hasUser() }
                     )
                 }
             }

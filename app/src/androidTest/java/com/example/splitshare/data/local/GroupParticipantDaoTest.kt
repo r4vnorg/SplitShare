@@ -25,7 +25,7 @@ class GroupParticipantDaoTest {
         db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).build()
         runBlocking {
             db.groupDao().insert(GroupEntity(id = "g1", name = "Cabin trip", description = "", createdAt = 1L))
-            db.personDao().insert(PersonEntity(id = "p1", name = "Alice", email = "alice@example.com", phone = ""))
+            db.personDao().upsert(PersonEntity(id = "p1", name = "Alice", email = "alice@example.com", phone = ""))
         }
     }
 

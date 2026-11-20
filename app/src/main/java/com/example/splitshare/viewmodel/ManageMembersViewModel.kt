@@ -9,6 +9,7 @@ import com.example.splitshare.data.PersonRepository
 import com.example.splitshare.domain.BalanceCalculator
 import com.example.splitshare.domain.MoneyFormatter
 import com.example.splitshare.domain.ProfileValidator
+import com.example.splitshare.domain.model.SyncStatus
 import com.example.splitshare.ui.navigation.Routes
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -19,7 +20,12 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-data class MemberRow(val personId: String, val name: String, val email: String)
+data class MemberRow(
+    val personId: String,
+    val name: String,
+    val email: String,
+    val syncStatus: SyncStatus
+)
 
 private data class ManageMembersFormState(
     val name: String = "",
@@ -59,7 +65,12 @@ class ManageMembersViewModel(
         formState,
     ) { participants, form ->
         ManageMembersUiState(
-            members = participants.map { MemberRow(it.person.id, it.person.name, it.person.email) },
+            members = participants.map { MemberRow(
+                it.person.id,
+                it.person.name,
+                it.person.email,
+                it.participant.syncStatus
+            ) },
             newPersonName = form.name,
             newPersonEmail = form.email,
             newPersonPhone = form.phone,
@@ -70,25 +81,17 @@ class ManageMembersViewModel(
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, ManageMembersUiState())
 
-    fun onNewPersonNameChange(name: String) = formState.update { it.copy(name = name, nameError = null) }
-
     fun onNewPersonEmailChange(email: String) = formState.update { it.copy(email = email, emailError = null) }
-
-    fun onNewPersonPhoneChange(phone: String) = formState.update { it.copy(phone = phone, phoneError = null) }
 
     fun addParticipant() {
         val form = formState.value
-        val nameError = ProfileValidator.nameError(form.name)
         val emailError = ProfileValidator.emailError(form.email)
-        val phoneError = ProfileValidator.phoneError(form.phone)
-        if (nameError != null || emailError != null || phoneError != null) {
-            formState.update { it.copy(nameError = nameError, emailError = emailError, phoneError = phoneError) }
+        if (emailError != null) {
+            formState.update { it.copy(emailError = emailError) }
             return
         }
         viewModelScope.launch {
-            val person = personRepository.upsertAndGet(form.name, form.email, form.phone)
-            groupRepository.addParticipant(groupId, person)
-            formState.value = ManageMembersFormState()
+            groupRepository.addParticipant(groupId, formState.value.email)
         }
     }
 

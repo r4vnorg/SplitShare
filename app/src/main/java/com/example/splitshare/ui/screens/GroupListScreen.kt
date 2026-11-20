@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.splitshare.domain.model.SyncStatus
 import com.example.splitshare.viewmodel.AppViewModelProvider
 import com.example.splitshare.viewmodel.GroupListViewModel
 
@@ -71,14 +72,27 @@ fun GroupListScreen(
                     .fillMaxSize()
                     .padding(innerPadding),
             ) {
-                items(uiState.groups, key = { it.id }) { group ->
+                items(uiState.groups, key = { it.group.id }) { info ->
                     ListItem(
-                        headlineContent = { Text(group.name) },
+                        headlineContent = { Text(info.group.name) },
                         supportingContent = {
-                            val memberWord = if (group.participantCount == 1) "member" else "members"
-                            Text("${group.participantCount} $memberWord")
+                            when(info.group.syncStatus) {
+                                SyncStatus.SYNCED -> {
+                                    val memberWord =
+                                        if (info.participants.size == 1) "member" else "members"
+                                    Text("${info.participants.size} $memberWord")
+                                }
+
+                                SyncStatus.FAILED -> Text("SYNC FAILED")
+                                else -> Text("Syncing")
+                            }
                         },
-                        modifier = Modifier.clickable { onGroupClick(group.id) },
+                        modifier =
+                            when(info.group.syncStatus) {
+                                SyncStatus.SYNCED -> Modifier.clickable { onGroupClick(info.group.id) }
+                                SyncStatus.PENDING -> Modifier.clickable { onGroupClick(info.group.id) }
+                                else -> Modifier.clickable {}
+                            }
                     )
                 }
             }

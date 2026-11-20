@@ -2,6 +2,7 @@ package com.example.splitshare
 
 import android.app.Application
 import androidx.work.Configuration
+import kotlinx.coroutines.launch
 
 class SplitShareApplication : Application(), Configuration.Provider {
 

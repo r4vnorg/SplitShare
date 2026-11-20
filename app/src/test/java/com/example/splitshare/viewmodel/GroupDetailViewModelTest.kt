@@ -5,7 +5,7 @@ import com.example.splitshare.data.FakeExpenseRepository
 import com.example.splitshare.data.FakeGroupRepository
 import com.example.splitshare.domain.model.Expense
 import com.example.splitshare.domain.model.ExpenseSplit
-import com.example.splitshare.domain.model.Participant
+import com.example.splitshare.domain.model.ParticipantWithPerson
 import com.example.splitshare.domain.model.Person
 import com.example.splitshare.domain.model.SyncStatus
 import com.example.splitshare.data.FakeReminderRepository
@@ -30,7 +30,7 @@ class GroupDetailViewModelTest {
 
     /** Alice paid 200, split evenly: Alice is owed 100, Bob owes 100. */
     private fun aliceIsOwedByBob() {
-        groupRepository.emitParticipants(listOf(Participant(alice, true), Participant(bob, true)))
+        groupRepository.emitParticipants(listOf(ParticipantWithPerson(alice, true), ParticipantWithPerson(bob, true)))
         expenseRepository.emitExpenses(
             listOf(
                 Expense("e1", groupId, "Dinner", 200L, "p1", 0L, SyncStatus.SYNCED,
@@ -67,7 +67,7 @@ class GroupDetailViewModelTest {
     @Test
     fun expenseSummaryResolvesPayerNameFromParticipants() {
         groupRepository.emitParticipants(
-            listOf(Participant(Person("p1", "Alice", "alice@example.com", ""), isActive = true))
+            listOf(ParticipantWithPerson(Person("p1", "Alice", "alice@example.com", ""), isActive = true))
         )
         expenseRepository.emitExpenses(
             listOf(

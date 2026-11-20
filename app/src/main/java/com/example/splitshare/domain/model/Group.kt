@@ -6,11 +6,11 @@ data class Group(
     val name: String,
     val description: String,
     val createdAt: Long,
+    val syncStatus: SyncStatus
 )
 
 /** Group List row (S4): name plus how many active participants it has. */
-data class GroupSummary(
-    val id: String,
-    val name: String,
-    val participantCount: Int,
+data class GroupInfo(
+    val group: Group,
+    val participants: List<Participant>
 )

@@ -3,7 +3,7 @@ package com.example.splitshare.viewmodel
 import androidx.lifecycle.SavedStateHandle
 import com.example.splitshare.data.FakeExpenseRepository
 import com.example.splitshare.data.FakeGroupRepository
-import com.example.splitshare.domain.model.Participant
+import com.example.splitshare.domain.model.ParticipantWithPerson
 import com.example.splitshare.domain.model.Person
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -27,14 +27,14 @@ class AddExpenseViewModelTest {
     )
 
     private fun twoParticipants() = listOf(
-        Participant(Person("p1", "Alice", "alice@example.com", ""), isActive = true),
-        Participant(Person("p2", "Bob", "bob@example.com", ""), isActive = true),
+        ParticipantWithPerson(Person("p1", "Alice", "alice@example.com", ""), isActive = true),
+        ParticipantWithPerson(Person("p2", "Bob", "bob@example.com", ""), isActive = true),
     )
 
     @Test
     fun uiStateReflectsGroupParticipants() {
         groupRepository.emitParticipants(
-            listOf(Participant(Person("p1", "Alice", "alice@example.com", ""), isActive = true))
+            listOf(ParticipantWithPerson(Person("p1", "Alice", "alice@example.com", ""), isActive = true))
         )
 
         val viewModel = viewModel()

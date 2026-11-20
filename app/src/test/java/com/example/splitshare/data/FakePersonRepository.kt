@@ -11,6 +11,9 @@ class FakePersonRepository : PersonRepository {
     private val peopleFlow = MutableStateFlow<List<Person>>(emptyList())
 
     override fun observeAll(): Flow<List<Person>> = peopleFlow
+    override suspend fun findById(id: String): Person? {
+        TODO("Not yet implemented")
+    }
 
     override suspend fun findByEmail(email: String): Person? =
         people.find { it.email.equals(email.trim(), ignoreCase = true) }

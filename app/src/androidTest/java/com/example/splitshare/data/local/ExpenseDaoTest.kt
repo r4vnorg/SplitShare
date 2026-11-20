@@ -24,8 +24,8 @@ class ExpenseDaoTest {
         db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).build()
         runBlocking {
             db.groupDao().insert(GroupEntity(id = "g1", name = "Cabin trip", description = "", createdAt = 1L))
-            db.personDao().insert(PersonEntity(id = "payer", name = "Alice", email = "alice@example.com", phone = ""))
-            db.personDao().insert(PersonEntity(id = "other", name = "Bob", email = "bob@example.com", phone = ""))
+            db.personDao().upsert(PersonEntity(id = "payer", name = "Alice", email = "alice@example.com", phone = ""))
+            db.personDao().upsert(PersonEntity(id = "other", name = "Bob", email = "bob@example.com", phone = ""))
         }
     }
 

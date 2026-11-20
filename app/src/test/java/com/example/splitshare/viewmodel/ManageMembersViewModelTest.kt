@@ -6,7 +6,7 @@ import com.example.splitshare.data.FakeGroupRepository
 import com.example.splitshare.data.FakePersonRepository
 import com.example.splitshare.domain.model.Expense
 import com.example.splitshare.domain.model.ExpenseSplit
-import com.example.splitshare.domain.model.Participant
+import com.example.splitshare.domain.model.ParticipantWithPerson
 import com.example.splitshare.domain.model.Person
 import com.example.splitshare.domain.model.SyncStatus
 import org.junit.Assert.assertEquals
@@ -35,7 +35,7 @@ class ManageMembersViewModelTest {
     @Test
     fun membersReflectActiveParticipants() {
         groupRepository.emitParticipants(
-            listOf(Participant(Person("p1", "Alice", "alice@example.com", ""), isActive = true))
+            listOf(ParticipantWithPerson(Person("p1", "Alice", "alice@example.com", ""), isActive = true))
         )
 
         val viewModel = viewModel()
@@ -46,7 +46,7 @@ class ManageMembersViewModelTest {
 
     @Test
     fun removingAMemberWithZeroBalanceSucceeds() {
-        groupRepository.emitParticipants(listOf(Participant(Person("p1", "Alice", "a@x.com", ""), true)))
+        groupRepository.emitParticipants(listOf(ParticipantWithPerson(Person("p1", "Alice", "a@x.com", ""), true)))
         expenseRepository.emitExpenses(emptyList())
 
         val viewModel = viewModel()
@@ -58,7 +58,7 @@ class ManageMembersViewModelTest {
 
     @Test
     fun removingAMemberWithNonZeroBalanceIsBlocked() {
-        groupRepository.emitParticipants(listOf(Participant(Person("p1", "Alice", "a@x.com", ""), true)))
+        groupRepository.emitParticipants(listOf(ParticipantWithPerson(Person("p1", "Alice", "a@x.com", ""), true)))
         expenseRepository.emitExpenses(
             listOf(
                 Expense(
